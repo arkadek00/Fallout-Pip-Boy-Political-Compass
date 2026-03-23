@@ -1,0 +1,3594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fallout Factions — Interactive Pip-Boy Political Compass</title>
+  <style>
+    :root {
+      --bg: #07110a;
+      --panel: #08160d;
+      --panel-2: rgba(111,255,163,0.04);
+      --grid: rgba(111, 255, 163, 0.16);
+      --grid-strong: rgba(111, 255, 163, 0.34);
+      --text: #b9ffcb;
+      --dim: #7ed79b;
+      --bright: #98ffb7;
+      --glow: rgba(111, 255, 163, 0.45);
+      --dot: #c9ffd7;
+      --border: rgba(111, 255, 163, 0.45);
+      --danger: #d8ffb2;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Courier New", Courier, monospace;
+      background:
+        radial-gradient(circle at top, rgba(111,255,163,0.08), transparent 32%),
+        linear-gradient(180deg, #071109 0%, #030804 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1840px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .screen {
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(10,25,15,0.96), rgba(4,10,6,0.98));
+      box-shadow:
+        0 0 0 1px rgba(111,255,163,0.15) inset,
+        0 0 24px rgba(111,255,163,0.14),
+        0 0 60px rgba(111,255,163,0.06);
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      padding: 18px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(111,255,163,0.04);
+    }
+
+    .title {
+      font-size: 28px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px var(--glow);
+      margin: 0;
+    }
+
+    .sub {
+      color: var(--dim);
+      font-size: 13px;
+      margin-top: 6px;
+      line-height: 1.4;
+      max-width: 980px;
+    }
+
+    .tag {
+      white-space: nowrap;
+      font-size: 12px;
+      color: var(--bright);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr;
+      gap: 14px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(111,255,163,0.025);
+    }
+
+    .presetsBar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 18px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(111,255,163,0.025);
+    }
+
+    .presetLabel {
+      display: inline-flex;
+      align-items: center;
+      color: var(--bright);
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-right: 4px;
+    }
+
+    .controlBox {
+      border: 1px solid rgba(111,255,163,0.18);
+      border-radius: 14px;
+      padding: 12px;
+      background: var(--panel-2);
+      min-height: 100%;
+    }
+
+    .controlTitle {
+      font-size: 13px;
+      color: var(--bright);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .controlHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .controlHeader .controlTitle {
+      margin-bottom: 0;
+    }
+
+    .controlClear {
+      border: 1px solid rgba(111,255,163,0.22);
+      background: rgba(111,255,163,0.04);
+      color: var(--dim);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .controlClear:hover {
+      color: var(--bright);
+      border-color: var(--border);
+      background: rgba(111,255,163,0.08);
+    }
+
+    .timelineWrap {
+      display: grid;
+      gap: 10px;
+    }
+
+    .yearReadout {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--dim);
+    }
+
+    .yearReadout strong { color: var(--bright); font-size: 20px; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #98ffb7;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .gameButtons,
+    .typeButtons,
+    .quickButtons,
+    .layerButtons,
+    .overlayButtons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button.filterBtn {
+      border: 1px solid rgba(111,255,163,0.22);
+      background: rgba(111,255,163,0.04);
+      color: var(--dim);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    button.filterBtn:hover,
+    button.filterBtn.active {
+      color: var(--bright);
+      border-color: var(--border);
+      box-shadow: 0 0 0 1px rgba(111,255,163,0.12) inset, 0 0 12px rgba(111,255,163,0.09);
+      background: rgba(111,255,163,0.08);
+    }
+
+    .search {
+      width: 100%;
+      margin-top: 10px;
+      border: 1px solid rgba(111,255,163,0.2);
+      background: rgba(0,0,0,0.18);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font: inherit;
+      outline: none;
+    }
+
+    .search::placeholder { color: rgba(185,255,203,0.45); }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .leftPane {
+      padding: 18px 18px 10px;
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rightPane {
+      padding: 18px;
+      background: rgba(111,255,163,0.03);
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      grid-template-areas:
+        'status status'
+        'inspection compare'
+        'registry registry'
+        'notes notes';
+      gap: 14px;
+    }
+
+    .compassShell {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(111,255,163,0.02), transparent 24%),
+        rgba(2,8,5,0.9);
+      position: relative;
+      min-height: 102vh;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .compassShell.dragging {
+      cursor: grabbing;
+    }
+
+    .compassTopBar {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .compassHint {
+      color: var(--dim);
+      font-size: 11px;
+      letter-spacing: 0.4px;
+      margin-left: auto;
+    }
+
+    .overlayRow {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .scanlines::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.014) 0px,
+        rgba(255,255,255,0.014) 1px,
+        transparent 2px,
+        transparent 4px
+      );
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      will-change: contents;
+      shape-rendering: geometricPrecision;
+      text-rendering: geometricPrecision;
+      image-rendering: high-quality;
+      backface-visibility: hidden;
+    }
+
+    .labelLine {
+      stroke: rgba(152,255,183,0.4);
+      stroke-width: 1.2;
+      vector-effect: non-scaling-stroke;
+      shape-rendering: geometricPrecision;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+
+    .pointLabelBg {
+      fill: rgba(5,15,9,0.86);
+      stroke: rgba(111,255,163,0.24);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+      shape-rendering: crispEdges;
+      rx: 6;
+      ry: 6;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+
+    .pointLabel {
+      fill: var(--text);
+      font-size: 13px;
+      text-shadow: 0 0 8px rgba(111,255,163,0.12);
+      text-rendering: geometricPrecision;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      paint-order: stroke fill;
+      stroke: rgba(5,15,9,0.72);
+      stroke-width: 1.1px;
+      stroke-linejoin: round;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+
+    .labelDimmed {
+      opacity: 0.14;
+    }
+
+    .labelFocused {
+      opacity: 1;
+    }
+
+    .legendTitle,
+    .notesTitle,
+    .detailTitle {
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 12px;
+      color: var(--bright);
+      text-shadow: 0 0 10px var(--glow);
+    }
+
+    .statusBar {
+      grid-area: status;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--dim);
+      font-size: 12px;
+      border: 1px solid rgba(111,255,163,0.18);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: var(--panel-2);
+    }
+
+    .detailPanel {
+      grid-area: inspection;
+      border: 1px solid rgba(111,255,163,0.18);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--panel-2);
+      min-height: 210px;
+    }
+
+    .detailHead {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .detailBadge {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: var(--bright);
+      box-shadow: 0 0 10px rgba(111,255,163,0.12) inset;
+      flex: 0 0 auto;
+    }
+
+    .detailMeta {
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .detailMeta strong { color: var(--text); }
+
+    .detailBody {
+      color: var(--dim);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .comparePanel {
+      grid-area: compare;
+      border: 1px solid rgba(111,255,163,0.18);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--panel-2);
+      min-height: 180px;
+    }
+
+    .compareHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .compareHint {
+      color: var(--dim);
+      font-size: 11px;
+    }
+
+    .compareClear {
+      border: 1px solid rgba(111,255,163,0.22);
+      background: rgba(111,255,163,0.04);
+      color: var(--dim);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .compareClear:hover,
+    .compareClear.active {
+      color: var(--bright);
+      border-color: var(--border);
+      background: rgba(111,255,163,0.08);
+    }
+
+    .compareEmpty {
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .compareGrid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .compareCards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .compareCard {
+      border: 1px solid rgba(111,255,163,0.18);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(111,255,163,0.03);
+      min-height: 90px;
+    }
+
+    .compareCardHead {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .compareCardMeta {
+      color: var(--dim);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .compareStats {
+      display: grid;
+      gap: 8px;
+    }
+
+    .compareStatRow {
+      display: grid;
+      grid-template-columns: 108px repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      color: var(--dim);
+    }
+
+    .compareStatLabel {
+      color: var(--bright);
+      white-space: nowrap;
+    }
+
+    .compareValue {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compareMiniBar {
+      position: relative;
+      height: 8px;
+      flex: 1 1 auto;
+      border-radius: 999px;
+      background: rgba(111,255,163,0.08);
+      border: 1px solid rgba(111,255,163,0.14);
+      overflow: hidden;
+    }
+
+    .compareMiniFill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(126,215,155,0.55), rgba(152,255,183,0.95));
+      box-shadow: 0 0 8px rgba(111,255,163,0.16);
+    }
+
+    .compareNumber {
+      min-width: 30px;
+      text-align: right;
+      color: var(--bright);
+    }
+
+    .compareDelta {
+      color: var(--dim);
+      font-size: 11px;
+    }
+
+    .compareTopRow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .legendItem.compareSelected {
+      border-color: var(--border);
+      box-shadow: 0 0 0 1px rgba(111,255,163,0.14) inset, 0 0 18px rgba(111,255,163,0.11);
+      background: rgba(111,255,163,0.08);
+    }
+
+    .point.compareSelected circle {
+      stroke-width: 3.2;
+      filter: url(#glow);
+    }
+
+    .dnaPanel {
+      margin-top: 14px;
+      border-top: 1px solid rgba(111,255,163,0.16);
+      padding-top: 12px;
+    }
+
+    .dnaTitle {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--bright);
+      margin-bottom: 10px;
+    }
+
+    .dnaGrid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .dnaRow {
+      display: grid;
+      grid-template-columns: 112px 1fr 40px;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      color: var(--dim);
+    }
+
+    .dnaLabel {
+      white-space: nowrap;
+    }
+
+    .dnaBar {
+      position: relative;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(111,255,163,0.08);
+      border: 1px solid rgba(111,255,163,0.14);
+      overflow: hidden;
+    }
+
+    .dnaFill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(126,215,155,0.55), rgba(152,255,183,0.95));
+      box-shadow: 0 0 10px rgba(111,255,163,0.18);
+    }
+
+    .dnaValue {
+      text-align: right;
+      color: var(--bright);
+      font-size: 11px;
+    }
+
+    .registryBlock {
+      grid-area: registry;
+    }
+
+    .notes {
+      grid-area: notes;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+
+    .legendGrid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      max-height: 620px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .legendItem {
+      border: 1px solid rgba(111,255,163,0.18);
+      border-radius: 12px;
+      padding: 10px 11px;
+      background: rgba(111,255,163,0.03);
+      cursor: pointer;
+      transition: 0.16s ease;
+    }
+
+    .legendItem:hover,
+    .legendItem.active {
+      border-color: var(--border);
+      box-shadow: 0 0 0 1px rgba(111,255,163,0.12) inset, 0 0 14px rgba(111,255,163,0.07);
+      background: rgba(111,255,163,0.06);
+    }
+
+    .legendHead {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .badge {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--bright);
+      box-shadow: 0 0 10px rgba(111,255,163,0.12) inset;
+      flex: 0 0 auto;
+    }
+
+    .coords {
+      color: var(--bright);
+      font-size: 12px;
+    }
+
+    .legendText {
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .notes p {
+      margin: 0 0 10px;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .watermark {
+      position: absolute;
+      font-size: 11px;
+      color: var(--dim);
+      border: 1px solid rgba(111,255,163,0.2);
+      border-radius: 10px;
+      padding: 5px 8px;
+      background: rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      backdrop-filter: blur(2px);
+      z-index: 10;
+    }
+
+    .wm-top-left { top: 6px; left: 10px; }
+    .wm-bottom-right { bottom: 10px; right: 10px; }
+
+    
+
+    .wm-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+    }
+
+    .wm-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: brightness(1.2) drop-shadow(0 0 4px rgba(111,255,163,0.35));
+      margin-left: -2px;
+    }
+
+    .footer {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 14px 18px 18px;
+      border-top: 1px solid var(--border);
+      background: rgba(111,255,163,0.025);
+    }
+
+    .quad {
+      border: 1px solid rgba(111,255,163,0.16);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--dim);
+    }
+
+    .quad strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--bright);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .powerOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 130;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at center, rgba(111,255,163,0.09), transparent 38%),
+        linear-gradient(180deg, rgba(2,8,5,0.985), rgba(1,4,2,0.998));
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    .powerOverlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .powerPanel {
+      width: min(560px, calc(100vw - 48px));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 24px 24px;
+      background: rgba(5,15,9,0.93);
+      box-shadow:
+        0 0 0 1px rgba(111,255,163,0.12) inset,
+        0 0 28px rgba(111,255,163,0.14);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .powerPanel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.013) 0px,
+        rgba(255,255,255,0.013) 1px,
+        transparent 2px,
+        transparent 4px
+      );
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .powerTitle {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--bright);
+      text-shadow: 0 0 12px var(--glow);
+    }
+
+    .powerSub {
+      color: var(--dim);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0 0 18px;
+    }
+
+    .powerButton {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(111,255,163,0.06);
+      color: var(--bright);
+      font: inherit;
+      font-size: 14px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 14px 24px;
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba(111,255,163,0.12) inset, 0 0 18px rgba(111,255,163,0.08);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .powerButton:hover {
+      transform: translateY(-1px);
+      background: rgba(111,255,163,0.1);
+      box-shadow: 0 0 0 1px rgba(111,255,163,0.16) inset, 0 0 20px rgba(111,255,163,0.14);
+    }
+
+    .powerGlyph {
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--bright);
+      border-radius: 50%;
+      position: relative;
+      display: inline-block;
+      box-shadow: 0 0 10px rgba(111,255,163,0.18);
+    }
+
+    .powerGlyph::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -3px;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 10px;
+      background: var(--bright);
+      box-shadow: 0 0 8px rgba(111,255,163,0.25);
+    }
+
+    .powerHint {
+      margin-top: 14px;
+      color: var(--dim);
+      font-size: 11px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .bootOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at center, rgba(111,255,163,0.08), transparent 40%),
+        linear-gradient(180deg, rgba(2,8,5,0.98), rgba(1,4,2,0.995));
+      transition: opacity 0.55s ease, visibility 0.55s ease;
+    }
+
+    .bootOverlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 22%, rgba(111,255,163,0.035) 52%, transparent 78%);
+      opacity: 0;
+      transform: translateY(-18px) scaleY(1.02);
+      pointer-events: none;
+    }
+
+    .bootOverlay.flicker::before {
+      animation: bootFlicker 0.22s linear 1;
+    }
+
+    .bootOverlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .bootPanel {
+      width: min(760px, calc(100vw - 48px));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 26px 24px 22px;
+      background: rgba(5,15,9,0.92);
+      box-shadow:
+        0 0 0 1px rgba(111,255,163,0.12) inset,
+        0 0 26px rgba(111,255,163,0.14);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bootPanel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.014) 0px,
+        rgba(255,255,255,0.014) 1px,
+        transparent 2px,
+        transparent 4px
+      );
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .bootPanel::before {
+      content: "";
+      position: absolute;
+      inset: -10% 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(152,255,183,0.08) 48%, transparent 100%);
+      opacity: 0;
+      transform: translateY(-120%);
+      pointer-events: none;
+    }
+
+    .bootOverlay.flicker .bootPanel::before {
+      animation: bootScan 0.28s ease-out 1;
+    }
+
+    .bootTitle {
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--bright);
+      text-shadow: 0 0 12px var(--glow);
+    }
+
+    .bootSub {
+      color: var(--dim);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .bootLines {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+      min-height: 138px;
+    }
+
+    .bootLine {
+      font-size: 13px;
+      color: var(--dim);
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.24s ease, transform 0.24s ease;
+    }
+
+    .bootLine.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .bootLine strong {
+      color: var(--bright);
+      font-weight: 700;
+    }
+
+    .bootProgressWrap {
+      margin-bottom: 14px;
+    }
+
+    .bootProgressLabel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--dim);
+      margin-bottom: 8px;
+    }
+
+    .bootProgressBar {
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(111,255,163,0.18);
+      background: rgba(111,255,163,0.07);
+      overflow: hidden;
+    }
+
+    .bootProgressFill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(126,215,155,0.55), rgba(152,255,183,0.98));
+      box-shadow: 0 0 12px rgba(111,255,163,0.2);
+      transition: width 0.22s ease;
+    }
+
+    .bootHint {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--dim);
+      font-size: 11px;
+    }
+
+    .bootHint strong {
+      color: var(--bright);
+    }
+
+    @keyframes bootFlicker {
+      0% { opacity: 0; }
+      12% { opacity: 0.85; }
+      28% { opacity: 0.18; }
+      42% { opacity: 0.72; }
+      64% { opacity: 0.12; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes bootScan {
+      0% { opacity: 0; transform: translateY(-120%); }
+      22% { opacity: 0.9; }
+      100% { opacity: 0; transform: translateY(120%); }
+    }
+
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(12px, 12px);
+      transition: opacity 0.12s ease;
+      z-index: 50;
+      max-width: 280px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(5,15,9,0.96);
+      box-shadow: 0 0 16px rgba(111,255,163,0.12);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .tooltip strong { color: var(--bright); display: block; margin-bottom: 4px; }
+    .tooltip .tipMeta { color: var(--dim); }
+
+    .point {
+      cursor: pointer;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .point circle {
+      transition: 0.18s ease;
+      vector-effect: non-scaling-stroke;
+      shape-rendering: geometricPrecision;
+    }
+
+    .point text {
+      text-rendering: geometricPrecision;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      paint-order: stroke fill;
+      stroke: rgba(5,15,9,0.6);
+      stroke-width: 0.8px;
+      stroke-linejoin: round;
+    }
+
+    .point:hover circle,
+    .point.active circle {
+      r: 15;
+      stroke-width: 3;
+      filter: url(#glow);
+    }
+
+    .point.hidden,
+    .legendItem.hidden {
+      opacity: 0.14;
+    }
+
+    .point.hidden { pointer-events: none; }
+
+    .focusHalo {
+      fill: none;
+      stroke: rgba(152,255,183,0.9);
+      stroke-width: 2.6;
+      filter: url(#glow);
+      pointer-events: none;
+      animation: focusPulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes focusPulse {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    .mutedText {
+      color: var(--dim);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1280px) {
+      .controls { grid-template-columns: 1fr; }
+      .main { grid-template-columns: 1fr; }
+      .leftPane { border-bottom: 1px solid var(--border); }
+      .rightPane {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          'status'
+          'inspection'
+          'compare'
+          'registry'
+          'notes';
+      }
+      .legendGrid { max-height: none; }
+      .footer { grid-template-columns: 1fr 1fr; }
+      .compassShell { min-height: 62vh; }
+    }
+
+    @media (max-width: 760px) {
+      .header { flex-direction: column; align-items: start; }
+      .footer { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="screen">
+      <div class="watermark wm-top-left">
+        <span>VAULT-TEC TERMINAL SIGNATURE<br>© Arkadiusz Woźniak</span>
+      </div>
+      
+      <div class="header">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button class="filterBtn" id="soundToggleTop" type="button">Sound: ON</button>
+          <div class="tag" id="ambientTopBadge">Vault Ambience: ON</div>
+          <button class="filterBtn" id="clearAllFiltersTop" type="button">Clear All Filters</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="controlBox">
+          <div class="controlHeader"><div class="controlTitle">Timeline slider</div><button class="controlClear" id="clearTimeline" type="button">Clear</button></div>
+          <div class="timelineWrap">
+            <div class="yearReadout">
+              <span>Visible era range</span>
+              <strong id="yearLabel">2161–2287</strong>
+              <span id="timelineModeLabel">All eras combined</span>
+            </div>
+            <div class="mutedText">Range start</div>
+            <input id="timelineStart" type="range" min="0" max="4" step="1" value="0" />
+            <div class="mutedText">Range end</div>
+            <input id="timelineEnd" type="range" min="0" max="4" step="1" value="4" />
+            <div class="quickButtons" id="quickButtons"></div>
+          </div>
+        </div>
+
+        <div class="controlBox">
+          <div class="controlHeader"><div class="controlTitle">Game filter</div><button class="controlClear" id="clearGames" type="button">Clear</button></div>
+          <div class="gameButtons" id="gameButtons"></div>
+        </div>
+
+        <div class="controlBox">
+          <div class="controlHeader"><div class="controlTitle">Faction type filter</div><button class="controlClear" id="clearTypes" type="button">Clear</button></div>
+          <div class="typeButtons" id="typeButtons"></div>
+        </div>
+
+        <div class="controlBox">
+          <div class="controlHeader"><div class="controlTitle">Layer system</div><button class="controlClear" id="clearLayers" type="button">Clear</button></div>
+          <div class="layerButtons" id="layerButtons"></div>
+          <div class="overlayButtons" id="overlayButtons" style="margin-top:10px;"></div>
+          <input id="searchInput" class="search" type="text" placeholder="Search faction, ideology, or tag..." />
+          <div class="mutedText" style="margin-top:10px;">Layers keep the map readable: Core = major factions, Minor = smaller powers, Chaos = raiders/nihilists, Economic = trade and profit blocs.</div>
+        </div>
+      </div>
+
+      <div class="presetsBar">
+        <span class="presetLabel">Filter presets</span>
+        <button class="filterBtn" id="presetMajor" type="button">Major Powers</button>
+        <button class="filterBtn" id="presetDemocracy" type="button">Democracies</button>
+        <button class="filterBtn" id="presetExtremes" type="button">Extremes</button>
+        <button class="filterBtn" id="presetAuthExtremes" type="button">Authoritarian Extremes</button>
+        <button class="filterBtn" id="presetLibExtremes" type="button">Libertarian Extremes</button>
+        <button class="filterBtn" id="presetDoomsday" type="button">Doomsday Factions</button>
+        <button class="filterBtn" id="presetAnarchy" type="button">Wasteland Anarchy</button>
+        <button class="filterBtn" id="presetRaiders" type="button">Raiders / Chaos</button>
+        <button class="filterBtn" id="presetEconomic" type="button">Economic Actors</button>
+        <button class="filterBtn" id="presetReset" type="button">Reset Presets</button>
+      </div>
+
+      <div class="main">
+        <div class="leftPane">
+          <div class="compassTopBar">
+            <button class="filterBtn" id="resetView" type="button">Reset View</button>
+            <div class="compassHint"><span style="font-size:14px; font-weight:600; color:#e6e6e6; letter-spacing:0.4px; text-shadow:0 0 6px rgba(255,255,255,0.25); display:block; line-height:1.45; text-align:right;">
+  Use CTRL + mouse wheel to zoom the compass.<br />
+  Click a faction to toggle Focus mode on or off.
+</span></div>
+          </div>
+          <div class="overlayRow">
+            <button class="filterBtn" id="heatmapToggle" type="button">Heatmap overlay</button>
+          </div>
+          <div class="compassShell scanlines">
+            <svg id="compassSvg" viewBox="0 0 1400 1400" aria-label="Interactive Fallout Pip-Boy Political Compass" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="3.2" result="b" />
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <rect x="0" y="0" width="1400" height="1400" fill="transparent" />
+
+              <g stroke="var(--grid)" stroke-width="1.25">
+                <line x1="140" y1="140" x2="140" y2="1260" /><line x1="280" y1="140" x2="280" y2="1260" /><line x1="420" y1="140" x2="420" y2="1260" /><line x1="560" y1="140" x2="560" y2="1260" /><line x1="700" y1="140" x2="700" y2="1260" /><line x1="840" y1="140" x2="840" y2="1260" /><line x1="980" y1="140" x2="980" y2="1260" /><line x1="1120" y1="140" x2="1120" y2="1260" /><line x1="1260" y1="140" x2="1260" y2="1260" />
+                <line x1="140" y1="140" x2="1260" y2="140" /><line x1="140" y1="280" x2="1260" y2="280" /><line x1="140" y1="420" x2="1260" y2="420" /><line x1="140" y1="560" x2="1260" y2="560" /><line x1="140" y1="700" x2="1260" y2="700" /><line x1="140" y1="840" x2="1260" y2="840" /><line x1="140" y1="980" x2="1260" y2="980" /><line x1="140" y1="1120" x2="1260" y2="1120" /><line x1="140" y1="1260" x2="1260" y2="1260" />
+              </g>
+
+              <rect x="140" y="140" width="1120" height="1120" fill="none" stroke="var(--grid-strong)" stroke-width="2.25" />
+
+              <g stroke="var(--grid-strong)" stroke-width="3.5" filter="url(#glow)">
+                <line x1="700" y1="120" x2="700" y2="1280" />
+                <line x1="120" y1="700" x2="1280" y2="700" />
+              </g>
+
+              <g font-size="24" fill="var(--bright)" opacity="0.86" letter-spacing="1.2">
+                <text x="120" y="72">LIBERTARIAN LEFT</text>
+                <text x="980" y="72">LIBERTARIAN RIGHT</text>
+                <text x="120" y="1360">AUTHORITARIAN LEFT</text>
+                <text x="930" y="1360">AUTHORITARIAN RIGHT</text>
+              </g>
+
+              <g font-size="14" fill="var(--dim)" opacity="0.95">
+                <text x="130" y="1308">-10</text><text x="270" y="1308">-7.5</text><text x="412" y="1308">-5</text><text x="553" y="1308">-2.5</text><text x="695" y="1308">0</text><text x="833" y="1308">+2.5</text><text x="974" y="1308">+5</text><text x="1113" y="1308">+7.5</text><text x="1246" y="1308">+10</text>
+                <text x="128" y="132">-10</text><text x="270" y="132">-7.5</text><text x="412" y="132">-5</text><text x="553" y="132">-2.5</text><text x="695" y="132">0</text><text x="833" y="132">+2.5</text><text x="974" y="132">+5</text><text x="1113" y="132">+7.5</text><text x="1246" y="132">+10</text>
+                <text x="62" y="148">-10</text><text x="72" y="288">-7.5</text><text x="84" y="428">-5</text><text x="71" y="568">-2.5</text><text x="86" y="708">0</text><text x="71" y="848">+2.5</text><text x="84" y="988">+5</text><text x="71" y="1128">+7.5</text><text x="62" y="1268">+10</text>
+                <text x="1284" y="148">-10</text><text x="1284" y="288">-7.5</text><text x="1296" y="428">-5</text><text x="1283" y="568">-2.5</text><text x="1298" y="708">0</text><text x="1283" y="848">+2.5</text><text x="1296" y="988">+5</text><text x="1283" y="1128">+7.5</text><text x="1274" y="1268">+10</text>
+              </g>
+
+              <g id="heatmapLayer"></g>
+              <g id="focusLayer"></g>
+              <g id="connections" stroke="rgba(111,255,163,0.25)" stroke-width="1.4" fill="none"></g>
+              <g id="pointsLayer"></g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="rightPane">
+          <div class="statusBar">
+            <span id="visibleCount">Visible factions: 0</span>
+            <span id="statusGames">Games: all</span>
+            <span id="statusTypes">Types: all</span>
+            <span id="statusLayers">Layers: all</span>
+          </div>
+
+          <div class="detailPanel" id="detailPanel">
+            <h2 class="detailTitle">Faction inspection</h2>
+            <div class="detailHead">
+              <div class="detailBadge" id="detailBadge">☢</div>
+              <div class="detailMeta">
+                <strong id="detailName">Hover or click a faction</strong><br />
+                <span id="detailGame">Timeline-aware faction profile</span><br />
+                <span id="detailCoords">Coordinates: —</span>
+              </div>
+            </div>
+            <div class="detailBody" id="detailBody">
+              Use the timeline slider, game buttons, and type filters to isolate factions. Hover gives a quick tooltip; clicking a point or a legend card locks the detailed profile here.
+            </div>
+            <div class="dnaPanel">
+              <div class="dnaTitle">Ideology DNA</div>
+              <div class="dnaGrid" id="dnaGrid"></div>
+            </div>
+          </div>
+
+          <div class="comparePanel" id="comparePanel">
+            <div class="compareHeader">
+              <div>
+                <h2 class="detailTitle" style="margin-bottom:4px;">Comparison mode</h2>
+                <div class="compareHint">Shift-click up to 3 factions on the map or registry to compare their ideology DNA side by side.</div>
+              </div>
+              <button class="compareClear" id="compareClear" type="button">Clear</button>
+            </div>
+            <div id="compareContent" class="compareEmpty">No factions selected for comparison yet.</div>
+          </div>
+
+          <div class="registryBlock">
+            <h2 class="legendTitle">Faction registry</h2>
+            <div class="legendGrid" id="legendGrid"></div>
+          </div>
+
+          <div class="notes">
+            <h3 class="notesTitle">Calibration notes</h3>
+            <p>Comparison is relative to the Fallout wasteland, not a modern-state baseline. Scarcity, militarization, and post-collapse conditions push even benevolent factions closer to hierarchy than many real-world analogues.</p>
+            <p>Game-specific splits remain central: Fallout 3 Brotherhood is notably softer than the New Vegas or Fallout 4 chapters; NCR in New Vegas drifts more imperial and managerial than its Fallout 2 form.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-bottom: 8px;">
+          <div class="watermark" style="position: static;">
+            <span>VAULT-TEC TERMINAL SIGNATURE<br>© Arkadiusz Woźniak</span>
+          </div>
+        </div>
+        <div class="quad"><strong>Libertarian Left</strong> Followers, Railroad, and the Minutemen prioritize mutual aid, emancipation, or decentralized civic order over command structures.</div>
+        <div class="quad"><strong>Libertarian Right</strong> House, Yes Man, and much of NCR’s space emphasize autonomy, private initiative, or limited direct social engineering.</div>
+        <div class="quad"><strong>Authoritarian Left</strong> Unity and the Children of the Cathedral pursue forced social fusion, collective destiny, and anti-individual coercion.</div>
+        <div class="quad"><strong>Authoritarian Right</strong> The Enclave, Legion, Maxson’s Brotherhood, Boomers, and the Institute center hierarchy, exclusion, militarism, or elite command.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="powerOverlay" id="powerOverlay">
+    <div class="powerPanel">
+      <h2 class="powerTitle">Pip-Boy Power Control</h2>
+      <p class="powerSub">Manual activation unlocks browser audio properly and starts the full boot sequence with sound, flicker, and system diagnostics.</p>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <button class="powerButton" id="powerButton" type="button">INITIATE BOOT SEQUENCE</button>
+      <button class="filterBtn" id="soundToggleBoot" type="button">Sound: ON</button>
+      
+    </div>
+    </div>
+  </div>
+
+  <div class="bootOverlay hidden" id="bootOverlay">
+    <div class="bootPanel">
+      <h2 class="bootTitle">Pip-Boy System Boot</h2>
+      <div class="bootSub">Vault-Tec field terminal is loading wasteland faction records, doctrine metrics, and political compass diagnostics.</div>
+      <div class="bootLines" id="bootLines"></div>
+      <div class="bootProgressWrap">
+        <div class="bootProgressLabel">
+          <span>System startup</span>
+          <span id="bootPercent">0%</span>
+        </div>
+        <div class="bootProgressBar">
+          <div class="bootProgressFill" id="bootProgressFill"></div>
+        </div>
+      </div>
+      <div class="bootHint">
+        <span><strong>Tip:</strong> Press any key or click to skip.</span>
+        <span id="bootStatus">Standing by for Pip-Boy startup...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    let soundEnabled = true;
+    let ambientEnabled = true;
+    const eras = [
+      { key: 'f1', label: 'Fallout 1 era', year: '2161' },
+      { key: 'f2', label: 'Fallout 2 era', year: '2241' },
+      { key: 'f3', label: 'Fallout 3 era', year: '2277' },
+      { key: 'fnv', label: 'New Vegas era', year: '2281' },
+      { key: 'f4', label: 'Fallout 4 era', year: '2287' }
+    ];
+
+    const factions = [
+      { id: 'thinktank_fnv', name: 'Think Tank', fullName: 'Think Tank (Big MT)', game: 'New Vegas', era: 'fnv', symbol: '🧠', type: ['Scientific Technocracy','Elite Society'], layers: ['Minor'], x: 7.2, y: 9.0, summary: 'Detached post-human scientists pursuing experimentation without ethics or societal grounding.', ideology: 'Scientific nihilism / extreme technocracy', tags: ['big mt','science','nihilism','experiment','elite'] },
+      { id: 'rangers_f2', name: 'Desert Rangers', fullName: 'Desert Rangers (pre-NCR)', game: 'Fallout 2', era: 'f2', symbol: '⭐', type: ['Civic Militia','Independence Platform'], layers: ['Minor'], x: 2.0, y: -6.0, summary: 'Frontier justice, individual accountability, and minimal state structure.', ideology: 'Frontier libertarian justice', tags: ['rangers','law','frontier','justice','libertarian'] },
+      { id: 'whiteglove_fnv', name: 'White Glove Society', fullName: 'White Glove Society (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🎭', type: ['Elite Society','Cultural Crew'], layers: ['Minor'], x: 4.2, y: 2.0, summary: 'Aristocratic decadence, rigid class identity, and ritualized elitism.', ideology: 'Aristocratic traditionalism', tags: ['white glove','elite','class','society','vegas'] },
+      { id: 'kings_fnv', name: 'The Kings', fullName: 'The Kings (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '👑', type: ['Populist Movement','Cultural Crew'], layers: ['Minor'], x: -1.0, y: -4.0, summary: 'Charismatic local leadership and community-based authority over formal institutions.', ideology: 'Populist localism', tags: ['kings','freeside','community','populism','local'] },
+      { id: 'atom_f4', name: 'Children of Atom', fullName: 'Children of Atom (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '☢', type: ['Theocratic Cult','Collectivist Movement'], layers: ['Minor'], x: -2.0, y: 6.5, summary: 'Apocalyptic religious devotion centered on nuclear annihilation as divine truth.', ideology: 'Apocalyptic theocracy', tags: ['atom','religion','radiation','cult','faith'] },
+      { id: 'gunners_f4', name: 'Gunners', fullName: 'Gunners (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '💰', type: ['Mercenary Force','State Power'], layers: ['Minor','Economic'], x: 6.2, y: 3.2, summary: 'Professionalized warfare driven purely by profit and contract-based violence.', ideology: 'Mercenary capitalism', tags: ['gunners','mercenary','profit','military','contract'] },
+      { id: 'hubologists_f2', name: 'Hubologists', fullName: 'Hubologists (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '🌀', type: ['Theocratic Cult','Elite Society'], layers: ['Minor','Economic'], x: 3.0, y: 5.0, summary: 'Pseudo-scientific cult blending religion, exploitation, and technological obsession.', ideology: 'Cult capitalism hybrid', tags: ['hubologists','cult','science','fraud','religion'] },
+      { id: 'talon_f3', name: 'Talon Company', fullName: 'Talon Company (Fallout 3)', game: 'Fallout 3', era: 'f3', symbol: '🪖', type: ['Mercenary Force','State Power'], layers: ['Minor','Economic'], x: 6.0, y: 4.0, summary: 'Corporate-backed paramilitary force acting as a tool of destabilization and control.', ideology: 'Corporate militarism', tags: ['talon','mercenary','corporate','military','control'] },
+      { id: 'bos_f1', name: 'Brotherhood of Steel', fullName: 'Brotherhood of Steel (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '⚙', type: ['Technocratic Order','Militarized Commune'], layers: ['Core'], x: 2.4, y: 3.6, summary: 'Technocratic, hierarchical, and isolationist; advanced knowledge is concentrated in an elite order.', ideology: 'Technocratic isolationism / quasi-feudal technocracy', tags: ['brotherhood','military','tech','authoritarian','isolationist'] },
+      { id: 'unity_f1', name: 'Unity', fullName: 'Unity (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '☣', type: ['Collectivist Movement','Theocratic Cult'], layers: ['Core'], x: -4.0, y: 7.5, summary: 'Forced collectivist merger under the Master. Anti-individual and biologically assimilationist.', ideology: 'Totalitarian collectivism', tags: ['master','mutants','collectivism','authoritarian','fusion'] },
+      { id: 'followers_f1', name: 'Followers of the Apocalypse', fullName: 'Followers of the Apocalypse (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '✚', type: ['Humanitarian Network','Liberation Network'], layers: ['Core'], x: -7.8, y: -8.2, summary: 'Mutual aid, open knowledge, and radical anti-authoritarianism.', ideology: 'Anarchist humanitarianism / libertarian socialism', tags: ['followers','aid','education','left','libertarian'] },
+      { id: 'cathedral_f1', name: 'Children of the Cathedral', fullName: 'Children of the Cathedral (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '⛪', type: ['Theocratic Cult','Collectivist Movement'], layers: ['Core'], x: -1.5, y: 6.0, summary: 'A theocratic front for coercive unity, mass manipulation, and doctrinal control.', ideology: 'Theocratic authoritarianism', tags: ['cult','religion','authoritarian','cathedral','unity'] },
+      { id: 'enclave_f2', name: 'Enclave', fullName: 'Enclave (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '★', type: ['State Power','Imperial War State','Elite Society'], layers: ['Core'], x: 7.7, y: 8.4, summary: 'Extreme nationalist elitism, militarized state power, and exclusionary biopolitics.', ideology: 'Ultranationalist authoritarianism / fascistic technocracy', tags: ['enclave','state','military','purity','authoritarian'] },
+      { id: 'ncr_f2', name: 'New California Republic', fullName: 'NCR (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '🦅', type: ['Republic','State Power'], layers: ['Core'], x: 1.1, y: -6.4, summary: 'A constitutional republic with markets, citizenship, and representative governance.', ideology: 'Liberal democracy', tags: ['ncr','republic','democracy','market','state'] },
+      { id: 'bos_f3', name: 'Brotherhood of Steel', fullName: 'Brotherhood of Steel (Fallout 3)', game: 'Fallout 3', era: 'f3', symbol: '⚙', type: ['Technocratic Order','Militarized Commune'], layers: ['Core'], x: 1.5, y: 1.8, summary: 'Lyons softens the Brotherhood into a more civic-protective force, though it remains paternalistic.', ideology: 'Paternalistic militarism / benevolent authoritarianism', tags: ['brotherhood','lyons','military','tech','reformist'] },
+      { id: 'enclave_f3', name: 'Enclave', fullName: 'Enclave (Fallout 3)', game: 'Fallout 3', era: 'f3', symbol: '★', type: ['State Power','Imperial War State','Elite Society'], layers: ['Core'], x: 6.7, y: 7.4, summary: 'Still authoritarian-nationalist and purifying, though less coherent than in Fallout 2.', ideology: 'Authoritarian nationalism', tags: ['enclave','eden','autumn','military','authoritarian'] },
+      { id: 'railroad_f3', name: 'Railroad', fullName: 'Railroad (Fallout 3)', game: 'Fallout 3', era: 'f3', symbol: '⇄', type: ['Liberation Network','Humanitarian Network'], layers: ['Core'], x: -6.2, y: -3.9, summary: 'Abolitionist civil-rights clandestinism focused on emancipation rather than formal state-building.', ideology: 'Abolitionist libertarianism', tags: ['railroad','liberation','android','rights','resistance'] },
+      { id: 'ncr_fnv', name: 'New California Republic', fullName: 'NCR (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🦅', type: ['Republic','State Power'], layers: ['Core'], x: 3.1, y: -7.0, summary: 'More imperial, corporatized, and bureaucratically strained than its Fallout 2 version.', ideology: 'Liberal democracy with bureaucratic imperial drift', tags: ['ncr','new vegas','republic','imperial','bureaucracy'] },
+      { id: 'legion_fnv', name: 'Caesar’s Legion', fullName: 'Caesar’s Legion (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '⚔', type: ['Imperial War State','Cultural Crew'], layers: ['Core'], x: 8.7, y: 8.8, summary: 'Conquest, slavery, patriarchy, and total subordination of the individual to a war-machine state.', ideology: 'Totalitarian autocracy / slave militarism', tags: ['legion','caesar','slavery','war','authoritarian'] },
+      { id: 'house_fnv', name: 'Mr. House', fullName: 'Mr. House (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '♛', type: ['Corporate Technocracy','City-State','Elite Society'], layers: ['Core','Economic'], x: 5.0, y: -6.1, summary: 'Rule by a hyper-rational elite proprietor prioritizing order, growth, and efficiency.', ideology: 'Technocratic autocracy / corporate libertarianism', tags: ['house','capital','vegas','tech','elite'] },
+      { id: 'yesman_fnv', name: 'Yes Man', fullName: 'Yes Man (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '☺', type: ['Independence Platform','City-State'], layers: ['Core'], x: 3.0, y: -2.6, summary: 'Not a fixed doctrine so much as a sovereignty vacuum shaped by the Courier’s choices.', ideology: 'Radical individualism / open-ended independence', tags: ['yes man','independent','courier','blank slate','vegas'] },
+      { id: 'boomers_fnv', name: 'Boomers', fullName: 'Boomers (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '✈', type: ['Militarized Commune','Cultural Crew'], layers: ['Core'], x: 5.7, y: 4.2, summary: 'Internally collectivist, externally exclusionary, and intensely militarized.', ideology: 'Isolationist militarism', tags: ['boomers','nellis','artillery','isolation','military'] },
+      { id: 'bos_fnv', name: 'Brotherhood of Steel', fullName: 'Brotherhood of Steel (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '⚙', type: ['Technocratic Order','Militarized Commune'], layers: ['Core'], x: 3.9, y: 4.5, summary: 'More brittle, defensive, and reactionary than Lyons’ chapter; strongly hostile to technological diffusion.', ideology: 'Reactionary technocratic isolationism', tags: ['brotherhood','hidden valley','tech','reactionary','military'] },
+      { id: 'followers_fnv', name: 'Followers of the Apocalypse', fullName: 'Followers of the Apocalypse (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '✚', type: ['Humanitarian Network','Liberation Network'], layers: ['Core'], x: -8.6, y: -6.2, summary: 'Still strongly libertarian-left, though somewhat more pragmatic and triage-driven than in Fallout 1.', ideology: 'Left-libertarian humanitarianism', tags: ['followers','freeside','aid','medicine','education'] },
+      { id: 'khans_fnv', name: 'Great Khans', fullName: 'Great Khans (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '▲', type: ['Tribal Confederation','Cultural Crew'], layers: ['Core'], x: -2.7, y: -6.7, summary: 'Clan autonomy, anti-state instincts, and survivalist identity with kin-centered ethics.', ideology: 'Tribal libertarianism / clan autonomy', tags: ['khans','tribal','autonomy','survivalist','clan'] },
+      { id: 'powder_fnv', name: 'Powder Gangers', fullName: 'Powder Gangers (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🧨', type: ['Criminal Revolt','Raider Gang'], layers: ['Core','Chaos'], x: -0.8, y: -3.2, summary: 'Anti-carceral revolt without a stable institutional alternative; closer to opportunistic anti-state disorder.', ideology: 'Criminal anarchism / nihilistic anti-statism', tags: ['powder gangers','prison','revolt','crime','anarchy'] },
+      { id: 'bos_f4', name: 'Brotherhood of Steel', fullName: 'Brotherhood of Steel (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '⚙', type: ['Technocratic Order','Imperial War State'], layers: ['Core'], x: 7.1, y: 6.2, summary: 'Maxson’s chapter is crusading, disciplinarian, expansionist, and openly supremacist toward synths.', ideology: 'Authoritarian technocratic militarism', tags: ['brotherhood','maxson','synth','military','authoritarian'] },
+      { id: 'railroad_f4', name: 'Railroad', fullName: 'Railroad (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '⇄', type: ['Liberation Network','Humanitarian Network'], layers: ['Core'], x: -4.8, y: -5.7, summary: 'A decentralized synth-liberation network focused on emancipation and covert resistance.', ideology: 'Single-issue liberation movement / libertarian activism', tags: ['railroad','synth','liberation','rights','desdemona'] },
+      { id: 'minutemen_f4', name: 'Minutemen', fullName: 'Minutemen (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '✦', type: ['Civic Militia','Independence Platform'], layers: ['Core'], x: -0.9, y: -5.1, summary: 'Local self-rule, mutual defense, and federated civic republicanism.', ideology: 'Civic republicanism / decentralized democracy', tags: ['minutemen','settlements','local','civic','militia'] },
+      { id: 'institute_f4', name: 'Institute', fullName: 'Institute (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '⌬', type: ['Scientific Technocracy','Corporate Technocracy','Elite Society'], layers: ['Core'], x: 6.1, y: 3.5, summary: 'Scientific caste rule, instrumental treatment of outsiders, and elite command without mass populism.', ideology: 'Scientific technocracy / elitist utilitarianism', tags: ['institute','science','elite','synth','control'] },
+      { id: 'diamondcity_f4', name: 'Diamond City', fullName: 'Diamond City (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '🏟', type: ['City-State','Republic'], layers: ['Minor'], x: -1.0, y: -2.0, summary: 'A semi-democratic urban polity shaped by security concerns, commerce, and synth paranoia.', ideology: 'Populist municipal democracy', tags: ['diamond city','city','paranoia','democracy','urban'] },
+      { id: 'crimson_f2', name: 'Crimson Caravan', fullName: 'Crimson Caravan (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '🚚', type: 'Trade Syndicate', layers: ['Minor','Economic'], x: 4.0, y: -3.0, summary: 'Commercial influence, logistics power, and soft corruption through trade networks.', ideology: 'Corporate trade capitalism', tags: ['crimson caravan','trade','capital','caravan','commerce'] },
+      { id: 'crimson_fnv', name: 'Crimson Caravan', fullName: 'Crimson Caravan (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🚚', type: 'Trade Syndicate', layers: ['Minor','Economic'], x: 4.5, y: -2.5, summary: 'A more entangled Mojave-era trade bloc embedded in political dealmaking and regional influence.', ideology: 'Corporate trade capitalism', tags: ['crimson caravan','trade','capital','mojave','commerce'] },
+      { id: 'vangraff_fnv', name: 'Van Graffs', fullName: 'Van Graffs (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '⚡', type: ['Trade Syndicate','Crime Syndicate'], layers: ['Minor','Economic'], x: 6.0, y: 2.0, summary: 'Violent cartel capitalism built around monopoly, intimidation, and controlled access to advanced weaponry.', ideology: 'Monopolistic corporate coercion', tags: ['van graffs','weapons','cartel','capital','coercion'] },
+      { id: 'fiends_fnv', name: 'Fiends', fullName: 'Fiends (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🔥', type: ['Raider Gang','Criminal Revolt'], layers: ['Minor','Chaos'], x: 0.0, y: -6.0, summary: 'Drug-fueled predation with almost no constructive politics or long-term social model.', ideology: 'Violent nihilism', tags: ['fiends','raiders','chaos','drugs','nihilism'] },
+      { id: 'vipers_f1', name: 'Vipers', fullName: 'Vipers (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '🐍', type: ['Raider Gang','Criminal Revolt'], layers: ['Minor','Chaos'], x: -2.0, y: -5.0, summary: 'Proto-tribal raider anarchism rooted in predation and anti-civil order.', ideology: 'Raider anti-statism', tags: ['vipers','raiders','collapse','tribal','chaos'] },
+      { id: 'skulz_f1', name: 'Skulz', fullName: 'Skulz (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '💀', type: ['Raider Gang','Criminal Revolt'], layers: ['Minor','Chaos'], x: 1.0, y: -4.0, summary: 'A street-level gang built around intimidation, turf violence, and petty predation rather than any real governing vision.', ideology: 'Urban gang nihilism', tags: ['skulz','gang','junk town','violence','chaos'] },
+      { id: 'khans_f1', name: 'Khans', fullName: 'Khans (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '△', type: ['Raider Gang','Tribal Confederation'], layers: ['Minor','Chaos'], x: -3.0, y: -5.8, summary: 'A brutal raider tribe defined by clan loyalty, coercion, and survival through organized predation.', ideology: 'Raider tribalism', tags: ['khans','raiders','tribal','clan','survival'] },
+      { id: 'hub_f1', name: 'The Hub', fullName: 'The Hub (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '⛁', type: ['City-State','Trade Syndicate'], layers: ['Minor','Economic'], x: 3.2, y: -2.8, summary: 'A trade-centered urban nexus where merchant interests, contracts, and practical governance outweigh grand ideology.', ideology: 'Mercantile city pragmatism', tags: ['hub','trade','city','merchant','commerce'] },
+      { id: 'blades_f1', name: 'Blades', fullName: 'Blades (Fallout 1)', game: 'Fallout 1', era: 'f1', symbol: '🗡', type: ['Liberation Network','Civic Militia'], layers: ['Minor'], x: -3.4, y: -3.8, summary: 'An anti-tyranny street resistance in the Boneyard, organized around local defense and opposition to exploitation.', ideology: 'Militant local liberation', tags: ['blades','boneyard','resistance','local','liberation'] },
+      { id: 'jackals_fnv', name: 'Jackals', fullName: 'Jackals (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🐺', type: ['Raider Gang','Criminal Revolt'], layers: ['Minor','Chaos'], x: -1.5, y: -5.4, summary: 'A scavenger-raider survival faction representing low-level societal breakdown rather than organized ideology.', ideology: 'Predatory collapse survivalism', tags: ['jackals','raiders','survival','collapse','chaos'] },
+      { id: 'triggermen_f4', name: 'Triggermen', fullName: 'Triggermen (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '🎩', type: ['Crime Syndicate','Elite Society'], layers: ['Minor','Economic'], x: 3.0, y: 1.0, summary: 'Mafia-style organized crime with hierarchy, territory, and coercive social order.', ideology: 'Criminal oligarchy', tags: ['triggermen','crime','mafia','hierarchy','territory'] },
+      { id: 'atomcats_f4', name: 'Atom Cats', fullName: 'Atom Cats (Fallout 4)', game: 'Fallout 4', era: 'f4', symbol: '😼', type: ['Cultural Crew','Independence Platform'], layers: ['Minor'], x: 1.0, y: -4.0, summary: 'A lifestyle-oriented power-armor subculture centered on autonomy, style, and low-coercion group identity.', ideology: 'Aesthetic individualism', tags: ['atom cats','culture','style','power armor','individualism'] },
+      { id: 'shi_f2', name: 'Shi', fullName: 'Shi (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '🧪', type: ['Scientific Technocracy','Elite Society'], layers: ['Minor'], x: 3.0, y: 2.0, summary: 'A highly advanced, insular technocratic enclave balancing science and cultural continuity.', ideology: 'Isolationist technocracy', tags: ['shi','science','china','enclave','tech'] },
+      { id: 'regulators_f3', name: 'Regulators', fullName: 'Regulators (Fallout 3)', game: 'Fallout 3', era: 'f3', symbol: '⚖', type: ['Civic Militia','Liberation Network'], layers: ['Minor'], x: 1.0, y: -3.0, summary: 'Decentralized bounty hunters enforcing moral order without formal legal institutions.', ideology: 'Vigilante justice', tags: ['regulators','justice','bounty','law','vigilante'] },
+      { id: 'slavers_f3', name: 'Paradise Falls', fullName: 'Paradise Falls Slavers (Fallout 3)', game: 'Fallout 3', era: 'f3', symbol: '⛓', type: ['Trade Syndicate','Crime Syndicate'], layers: ['Minor','Economic'], x: 7.0, y: 5.0, summary: 'A brutal slave-based economy built on coercion, profit, and total domination of captives.', ideology: 'Exploitative authoritarian capitalism', tags: ['slavery','paradise falls','trade','coercion','capital'] },
+      { id: 'pitt_f3', name: 'The Pitt', fullName: 'The Pitt (Fallout 3)', game: 'Fallout 3', era: 'f3', symbol: '🏭', type: ['State Power','Imperial War State'], layers: ['Minor'], x: 2.0, y: 6.0, summary: 'Harsh industrial regime justified as necessary for survival and long-term rebuilding.', ideology: 'Industrial authoritarian survivalism', tags: ['pitt','industry','survival','authoritarian','labor'] },
+      { id: 'sorrows_fnv', name: 'Sorrows / Dead Horses', fullName: 'Sorrows & Dead Horses (Honest Hearts)', game: 'New Vegas', era: 'fnv', symbol: '🌿', type: ['Tribal Confederation','Humanitarian Network'], layers: ['Minor'], x: -4.0, y: -5.0, summary: 'Tribal societies balancing pacifism, survival, and cultural identity in harsh conditions.', ideology: 'Tribal pacifism / survivalism', tags: ['sorrows','dead horses','tribal','pacifism','survival'] },
+      { id: 'repconn_fnv', name: 'Bright Followers', fullName: 'Bright Followers (REPCONN, New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🚀', type: ['Theocratic Cult','Scientific Technocracy'], layers: ['Minor'], x: -1.0, y: 4.0, summary: 'A strange fusion of faith and technology centered on transcendence and escape from the wasteland.', ideology: 'Technological transcendentalism', tags: ['repconn','bright','cult','ghouls','space'] },
+      { id: 'goodsprings_fnv', name: 'Goodsprings', fullName: 'Goodsprings (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🏘', type: ['Independence Platform','Civic Militia'], layers: ['Minor'], x: -2.4, y: -2.6, summary: 'A small, self-governing desert town built on local consensus, neighborly mutual aid, and resistance to outside coercion.', ideology: 'Localist independence / frontier communalism', tags: ['goodsprings','local','town','independent','community'] },
+      { id: 'novac_fnv', name: 'Novac', fullName: 'Novac (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '🦖', type: ['Independence Platform','City-State'], layers: ['Minor'], x: -1.1, y: -1.8, summary: 'A defensive roadside settlement focused on autonomy, pragmatic survival, and keeping external powers at arm’s length.', ideology: 'Pragmatic local autonomy', tags: ['novac','independent','town','survival','local'] },
+      { id: 'omertas_fnv', name: 'Omertas', fullName: 'Omertas (New Vegas)', game: 'New Vegas', era: 'fnv', symbol: '♠', type: ['Crime Syndicate','Elite Society'], layers: ['Minor','Economic'], x: 5.6, y: 1.6, summary: 'A tightly organized casino crime family combining vice, conspiracy, and old-world mafia hierarchy under the Vegas order.', ideology: 'Organized criminal oligarchy', tags: ['omertas','crime','casino','mafia','vegas'] },
+      { id: 'mordinos_f2', name: 'Mordinos', fullName: 'Mordinos (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '💉', type: ['Crime Syndicate','Trade Syndicate'], layers: ['Minor','Economic'], x: 4.8, y: 0.9, summary: 'A New Reno family built on drugs, rackets, and coercive influence, thriving through criminal enterprise and fear.', ideology: 'Narco-criminal oligarchy', tags: ['mordinos','new reno','crime','drugs','mafia'] },
+      { id: 'salvatores_f2', name: 'Salvatores', fullName: 'Salvatores (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '🔫', type: ['Crime Syndicate','Trade Syndicate'], layers: ['Minor','Economic'], x: 6.0, y: 2.2, summary: 'An authoritarian New Reno crime family centered on armed control, intimidation, and monopoly over advanced weaponry.', ideology: 'Militarized criminal oligarchy', tags: ['salvatores','new reno','crime','weapons','mafia'] },
+      { id: 'bishops_f2', name: 'Bishops', fullName: 'Bishops (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '🎰', type: ['Crime Syndicate','Elite Society'], layers: ['Minor','Economic'], x: 5.2, y: -0.4, summary: 'A politically connected New Reno family specializing in manipulation, vice, and influence through deals rather than brute force alone.', ideology: 'Political criminal capitalism', tags: ['bishops','new reno','crime','politics','casino'] },
+      { id: 'wrights_f2', name: 'Wrights', fullName: 'Wrights (Fallout 2)', game: 'Fallout 2', era: 'f2', symbol: '🥃', type: ['Crime Syndicate','Trade Syndicate'], layers: ['Minor','Economic'], x: 3.5, y: -1.6, summary: 'A comparatively restrained New Reno family rooted in bootlegging, patronage, and structured criminal respectability.', ideology: 'Traditionalist criminal patronage', tags: ['wrights','new reno','crime','bootlegging','family'] }
+    ];
+
+    const gameOrder = ['Fallout 1', 'Fallout 2', 'Fallout 3', 'New Vegas', 'Fallout 4'];
+    const typeOrder = ['Technocratic Order','Collectivist Movement','Humanitarian Network','Theocratic Cult','State Power','Republic','Liberation Network','Imperial War State','Corporate Technocracy','Independence Platform','Militarized Commune','Tribal Confederation','Criminal Revolt','Civic Militia','Scientific Technocracy','Elite Society','Populist Movement','Mercenary Force','City-State','Trade Syndicate','Raider Gang','Crime Syndicate','Cultural Crew'];
+    const layerOrder = ['Core','Minor','Chaos','Economic'];
+
+    const labelLayoutCache = new Map();
+
+    const state = {
+      labelMode: 'full',
+      viewScale: 1,
+      panX: 0,
+      panY: 0,
+      eraStart: 0,
+      eraEnd: 4,
+      games: new Set(),
+      types: new Set(),
+      layers: new Set(),
+      search: '',
+      selectedId: null,
+      focusId: null,
+      viewCenterX: 700,
+      viewCenterY: 700,
+      compareIds: [],
+      presetIds: null,
+      activePreset: null,
+      compareModifier: false,
+      heatmap: false
+    };
+
+    const quickButtons = document.getElementById('quickButtons');
+    const gameButtons = document.getElementById('gameButtons');
+    const clearTimeline = document.getElementById('clearTimeline');
+    const clearGames = document.getElementById('clearGames');
+    const clearTypes = document.getElementById('clearTypes');
+    const clearLayers = document.getElementById('clearLayers');
+    const typeButtons = document.getElementById('typeButtons');
+    const layerButtons = document.getElementById('layerButtons');
+    const heatmapToggle = document.getElementById('heatmapToggle');
+    const ambientTopBadge = document.getElementById('ambientTopBadge');
+    const legendGrid = document.getElementById('legendGrid');
+    const timelineStart = document.getElementById('timelineStart');
+    const timelineEnd = document.getElementById('timelineEnd');
+    const yearLabel = document.getElementById('yearLabel');
+    const timelineModeLabel = document.getElementById('timelineModeLabel');
+    const searchInput = document.getElementById('searchInput');
+    const pointsLayer = document.getElementById('pointsLayer');
+    const compassSvg = document.getElementById('compassSvg');
+    const heatmapLayer = document.getElementById('heatmapLayer');
+    const focusLayer = document.getElementById('focusLayer');
+    const connections = document.getElementById('connections');
+    const visibleCount = document.getElementById('visibleCount');
+    const statusGames = document.getElementById('statusGames');
+    const statusTypes = document.getElementById('statusTypes');
+    const statusLayers = document.getElementById('statusLayers');
+    const tooltip = document.getElementById('tooltip');
+    const compassShell = document.querySelector('.compassShell');
+    const detailBadge = document.getElementById('detailBadge');
+    const detailName = document.getElementById('detailName');
+    const detailGame = document.getElementById('detailGame');
+    const detailCoords = document.getElementById('detailCoords');
+    const detailBody = document.getElementById('detailBody');
+    const dnaGrid = document.getElementById('dnaGrid');
+    const compareContent = document.getElementById('compareContent');
+    const compareClear = document.getElementById('compareClear');
+    const presetMajor = document.getElementById('presetMajor');
+    const presetDemocracy = document.getElementById('presetDemocracy');
+    const presetExtremes = document.getElementById('presetExtremes');
+    const presetRaiders = document.getElementById('presetRaiders');
+    const presetEconomic = document.getElementById('presetEconomic');
+    const presetReset = document.getElementById('presetReset');
+    const presetAuthExtremes = document.getElementById('presetAuthExtremes');
+    const presetLibExtremes = document.getElementById('presetLibExtremes');
+    const presetDoomsday = document.getElementById('presetDoomsday');
+    const presetAnarchy = document.getElementById('presetAnarchy');
+    const clearAllFiltersTop = document.getElementById('clearAllFiltersTop');
+    const labelFull = document.createElement('button');
+    const labelCompact = document.createElement('button');
+    const labelHover = document.createElement('button');
+
+    labelFull.textContent = 'Full Labels';
+    labelCompact.textContent = 'Compact';
+    labelHover.textContent = 'Hover Only';
+    labelFull.className = 'filterBtn';
+    labelCompact.className = 'filterBtn';
+    labelHover.className = 'filterBtn';
+    const overlayRow = document.querySelector('.overlayRow');
+    
+    overlayRow.appendChild(labelFull);
+    overlayRow.appendChild(labelCompact);
+    overlayRow.appendChild(labelHover);
+    const powerOverlay = document.getElementById('powerOverlay');
+    const soundToggleBoot = document.getElementById('soundToggleBoot');
+    const soundToggleTop = document.getElementById('soundToggleTop');
+    const powerButton = document.getElementById('powerButton');
+    const bootOverlay = document.getElementById('bootOverlay');
+    const bootLinesWrap = document.getElementById('bootLines');
+    let bootLines = [];
+    const bootProgressFill = document.getElementById('bootProgressFill');
+    const bootPercent = document.getElementById('bootPercent');
+    const bootStatus = document.getElementById('bootStatus');
+
+    function coordX(x) { return 700 + 56 * x; }
+    function coordY(y) { return 700 + 56 * y; }
+    function formatCoords(f) { return `(${f.x > 0 ? '+' : ''}${f.x.toFixed(1)}, ${f.y > 0 ? '+' : ''}${f.y.toFixed(1)})`; }
+    function inEra(faction) {
+      const idx = eras.findIndex(era => era.key === faction.era);
+      return idx >= state.eraStart && idx <= state.eraEnd;
+    }
+    function matchSet(value, set) {
+      if (set.size === 0) return true;
+      if (Array.isArray(value)) return value.some(v => set.has(v));
+      return set.has(value);
+    }
+    function matchLayers(faction) { return state.layers.size === 0 || faction.layers.some(layer => state.layers.has(layer)); }
+
+    function matchSearch(faction) {
+      const q = state.search.trim().toLowerCase();
+      if (!q) return true;
+      const typeText = Array.isArray(faction.type) ? faction.type.join(' ') : faction.type;
+      const hay = [faction.fullName, faction.game, faction.ideology, faction.summary, typeText, ...faction.layers, ...faction.tags].join(' ').toLowerCase();
+      return hay.includes(q);
+    }
+
+    function visibleFaction(faction) {
+      const presetMatch = !state.presetIds || state.presetIds.has(faction.id);
+      return presetMatch && inEra(faction) && matchSet(faction.game, state.games) && matchSet(faction.type, state.types) && matchLayers(faction) && matchSearch(faction);
+    }
+
+    function buildButtons() {
+      eras.forEach((era, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'filterBtn';
+        btn.textContent = era.label;
+        btn.dataset.range = `${index}-${index}`;
+        btn.addEventListener('click', () => {
+          state.eraStart = index;
+          state.eraEnd = index;
+          timelineStart.value = String(index);
+          timelineEnd.value = String(index);
+          syncTimelineLabels();
+          render();
+        });
+        quickButtons.appendChild(btn);
+      });
+
+      const allBtn = document.createElement('button');
+      allBtn.className = 'filterBtn active';
+      allBtn.textContent = 'All eras combined';
+      allBtn.dataset.range = 'all';
+      allBtn.addEventListener('click', () => {
+        clearTimelineFilter();
+        render();
+      });
+      quickButtons.appendChild(allBtn);
+
+      gameOrder.forEach(game => {
+        const btn = document.createElement('button');
+        btn.className = 'filterBtn';
+        btn.textContent = game;
+        btn.addEventListener('click', () => {
+          state.games.has(game) ? state.games.delete(game) : state.games.add(game);
+          btn.classList.toggle('active', state.games.has(game));
+          render();
+        });
+        gameButtons.appendChild(btn);
+      });
+
+      typeOrder.forEach(type => {
+        const btn = document.createElement('button');
+        btn.className = 'filterBtn';
+        btn.textContent = type;
+        btn.addEventListener('click', () => {
+          state.types.has(type) ? state.types.delete(type) : state.types.add(type);
+          btn.classList.toggle('active', state.types.has(type));
+          render();
+        });
+        typeButtons.appendChild(btn);
+      });
+
+      layerOrder.forEach(layer => {
+        const btn = document.createElement('button');
+        btn.className = 'filterBtn';
+        btn.textContent = layer;
+        btn.addEventListener('click', () => {
+          state.layers.has(layer) ? state.layers.delete(layer) : state.layers.add(layer);
+          btn.classList.toggle('active', state.layers.has(layer));
+          render();
+        });
+        layerButtons.appendChild(btn);
+      });
+    }
+
+    function syncTimelineLabels() {
+      let start = Number(timelineStart.value);
+      let end = Number(timelineEnd.value);
+      if (start > end) [start, end] = [end, start];
+      state.eraStart = start;
+      state.eraEnd = end;
+
+      const startEra = eras[start];
+      const endEra = eras[end];
+      yearLabel.textContent = start === end ? startEra.year : `${startEra.year}–${endEra.year}`;
+      timelineModeLabel.textContent = start === 0 && end === eras.length - 1
+        ? 'All eras combined'
+        : start === end
+          ? startEra.label
+          : `${startEra.label} → ${endEra.label}`;
+
+      document.querySelectorAll('#quickButtons .filterBtn').forEach(btn => {
+        const active = btn.dataset.range === 'all'
+          ? start === 0 && end === eras.length - 1
+          : btn.dataset.range === `${start}-${end}`;
+        btn.classList.toggle('active', active);
+      });
+    }
+
+    function clearTimelineFilter() {
+      timelineStart.value = '0';
+      timelineEnd.value = String(eras.length - 1);
+      syncTimelineLabels();
+    }
+
+    function clearGameFilter() {
+      state.games.clear();
+      document.querySelectorAll('#gameButtons .filterBtn').forEach(btn => btn.classList.remove('active'));
+    }
+
+    function clearTypeFilter() {
+      state.types.clear();
+      document.querySelectorAll('#typeButtons .filterBtn').forEach(btn => btn.classList.remove('active'));
+    }
+
+    function clearLayerFilter() {
+      state.layers.clear();
+      document.querySelectorAll('#layerButtons .filterBtn').forEach(btn => btn.classList.remove('active'));
+    }
+
+    function clearAllFilters() {
+      clearTimelineFilter();
+      clearGameFilter();
+      clearTypeFilter();
+      clearLayerFilter();
+      state.presetIds = null;
+      state.activePreset = null;
+      state.search = '';
+      searchInput.value = '';
+      syncFilterButtons();
+      syncPresetButtons();
+    }
+
+    function syncFilterButtons() {
+      document.querySelectorAll('#gameButtons .filterBtn').forEach(btn => btn.classList.toggle('active', state.games.has(btn.textContent)));
+      document.querySelectorAll('#typeButtons .filterBtn').forEach(btn => btn.classList.toggle('active', state.types.has(btn.textContent)));
+      document.querySelectorAll('#layerButtons .filterBtn').forEach(btn => btn.classList.toggle('active', state.layers.has(btn.textContent)));
+    }
+
+    function syncPresetButtons() {
+      const presetMap = {
+        presetMajor: 'major',
+        presetDemocracy: 'democracy',
+        presetExtremes: 'extremes',
+        presetAuthExtremes: 'auth-extremes',
+        presetLibExtremes: 'lib-extremes',
+        presetDoomsday: 'doomsday',
+        presetAnarchy: 'anarchy',
+        presetRaiders: 'raiders',
+        presetEconomic: 'economic'
+      };
+      Object.entries(presetMap).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('active', state.activePreset === value);
+      });
+    }
+
+    function applyPreset(mode) {
+      const presetMap = {
+        major: ['bos_f1','unity_f1','followers_f1','cathedral_f1','enclave_f2','ncr_f2','bos_f3','enclave_f3','railroad_f3','ncr_fnv','legion_fnv','house_fnv','yesman_fnv','boomers_fnv','bos_fnv','followers_fnv','khans_fnv','powder_fnv','bos_f4','railroad_f4','minutemen_f4','institute_f4'],
+        democracy: ['ncr_f2','ncr_fnv','minutemen_f4','diamondcity_f4','followers_f1','followers_fnv','railroad_f3','railroad_f4','blades_f1','rangers_f2','regulators_f3','goodsprings_fnv','novac_fnv'],
+        extremes: ['thinktank_fnv','unity_f1','followers_f1','cathedral_f1','enclave_f2','enclave_f3','legion_fnv','house_fnv','boomers_fnv','bos_fnv','bos_f4','railroad_f4','followers_fnv','powder_fnv','fiends_fnv','atom_f4','institute_f4','pitt_f3','slavers_f3','salvatores_f2','omertas_fnv'],
+        'auth-extremes': ['unity_f1','cathedral_f1','enclave_f2','enclave_f3','legion_fnv','house_fnv','boomers_fnv','bos_f4','institute_f4','atom_f4','pitt_f3','slavers_f3'],
+        'lib-extremes': ['followers_f1','followers_fnv','railroad_f3','railroad_f4','minutemen_f4','khans_fnv','powder_fnv','fiends_fnv','vipers_f1','khans_f1','jackals_fnv','blades_f1','kings_fnv','sorrows_fnv','goodsprings_fnv','novac_fnv'],
+        doomsday: ['thinktank_fnv','unity_f1','enclave_f2','enclave_f3','institute_f4','repconn_fnv','atom_f4'],
+        anarchy: ['powder_fnv','fiends_fnv','vipers_f1','skulz_f1','khans_f1','jackals_fnv','khans_fnv','blades_f1','kings_fnv','sorrows_fnv','goodsprings_fnv','novac_fnv'],
+        raiders: ['fiends_fnv','vipers_f1','skulz_f1','khans_f1','jackals_fnv','powder_fnv'],
+        economic: ['crimson_f2','crimson_fnv','vangraff_fnv','gunners_f4','talon_f3','triggermen_f4','slavers_f3','hub_f1','house_fnv','hubologists_f2','omertas_fnv','mordinos_f2','salvatores_f2','bishops_f2','wrights_f2']
+      };
+
+      if (state.activePreset === mode) {
+        state.activePreset = null;
+        state.presetIds = null;
+      } else {
+        state.activePreset = mode;
+        state.presetIds = presetMap[mode] ? new Set(presetMap[mode]) : null;
+      }
+      syncPresetButtons();
+    }
+
+    function clamp(num, min, max) {
+      return Math.max(min, Math.min(max, Math.round(num)));
+    }
+
+    function deriveDNA(faction) {
+      const authoritarian = clamp(((faction.y + 10) / 20) * 100, 0, 100);
+      const individualism = clamp(((faction.x + 10) / 20) * 100, 0, 100);
+      const collectivism = 100 - individualism;
+      const types = Array.isArray(faction.type) ? faction.type : [faction.type];
+
+      let technocracy = 18;
+      let militarism = 16;
+      let egalitarianism = 14;
+      let spiritualism = 6;
+      let mercantilism = 10;
+      let chaos = 4;
+
+      const text = `${faction.fullName} ${faction.summary} ${faction.ideology} ${types.join(' ')} ${faction.tags.join(' ')} ${faction.layers.join(' ')}`.toLowerCase();
+
+      if (types.some(t => ['Technocratic Order','Scientific Technocracy','Corporate Technocracy'].includes(t))) technocracy += 42;
+      if (types.includes('State Power')) militarism += 24;
+      if (types.some(t => ['Imperial War State','Mercenary Force','Civic Militia','Militarized Commune'].includes(t))) militarism += 32;
+      if (types.some(t => ['Humanitarian Network','Liberation Network'].includes(t))) egalitarianism += 38;
+      if (types.includes('Theocratic Cult')) spiritualism += 52;
+      if (types.some(t => ['Trade Syndicate','Corporate Technocracy','Crime Syndicate','Elite Society'].includes(t))) mercantilism += 24;
+      if (types.some(t => ['Criminal Revolt','Raider Gang'].includes(t))) chaos += 42;
+      if (types.some(t => ['Populist Movement','City-State','Tribal Confederation','Cultural Crew','Independence Platform'].includes(t))) chaos += 8;
+
+      if (text.includes('science') || text.includes('tech')) technocracy += 16;
+      if (text.includes('military') || text.includes('war') || text.includes('slavery') || text.includes('conquest')) militarism += 18;
+      if (text.includes('aid') || text.includes('liberation') || text.includes('rights') || text.includes('mutual')) egalitarianism += 16;
+      if (text.includes('religion') || text.includes('cult') || text.includes('faith') || text.includes('theocracy')) spiritualism += 18;
+      if (text.includes('capital') || text.includes('trade') || text.includes('profit') || text.includes('corporate') || text.includes('oligarchy')) mercantilism += 18;
+      if (text.includes('chaos') || text.includes('raider') || text.includes('crime') || text.includes('nihil')) chaos += 18;
+
+      if (faction.layers.includes('Economic')) mercantilism += 12;
+      if (faction.layers.includes('Chaos')) chaos += 16;
+      if (faction.layers.includes('Core')) chaos -= 6;
+
+      if (text.includes('followers')) egalitarianism += 10;
+      if (text.includes('enclave') || text.includes('legion')) militarism += 10;
+      if (text.includes('atom') || text.includes('cathedral') || text.includes('hubologists')) spiritualism += 8;
+      if (text.includes('think tank') || text.includes('institute') || text.includes('house')) technocracy += 10;
+
+      return [
+        ['Authoritarian', authoritarian],
+        ['Individualist', individualism],
+        ['Collectivist', collectivism],
+        ['Technocratic', clamp(technocracy, 0, 100)],
+        ['Militaristic', clamp(militarism, 0, 100)],
+        ['Egalitarian', clamp(egalitarianism, 0, 100)],
+        ['Spiritual', clamp(spiritualism, 0, 100)],
+        ['Mercantile', clamp(mercantilism, 0, 100)],
+        ['Chaotic', clamp(chaos, 0, 100)]
+      ];
+    }
+
+    const influenceProfiles = {
+      bos_f1: { score: 68, reach: 42, threat: 70, cohesion: 88, rationale: 'Elite and technologically formidable, but small, isolationist, and regionally limited in Fallout 1.' },
+      unity_f1: { score: 95, reach: 82, threat: 100, cohesion: 96, rationale: 'The Master’s Unity is an existential, expansionist, highly coordinated threat with continental implications.' },
+      followers_f1: { score: 46, reach: 34, threat: 18, cohesion: 58, rationale: 'Morally important and intellectually influential, but materially small and non-coercive.' },
+      cathedral_f1: { score: 84, reach: 76, threat: 86, cohesion: 83, rationale: 'The Children of the Cathedral function as Unity’s covert social arm and extend its reach deep into settlements.' },
+      enclave_f2: { score: 100, reach: 88, threat: 100, cohesion: 95, rationale: 'Peak Enclave power: advanced technology, genocidal capacity, and national-scale ambitions.' },
+      ncr_f2: { score: 79, reach: 76, threat: 58, cohesion: 80, rationale: 'A rapidly consolidating republic with broad civic and territorial influence, though not yet at later scale.' },
+      bos_f3: { score: 72, reach: 62, threat: 74, cohesion: 77, rationale: 'Lyons’ chapter has serious military relevance in the Capital Wasteland, though it is internally strained.' },
+      enclave_f3: { score: 83, reach: 74, threat: 90, cohesion: 68, rationale: 'Still devastatingly dangerous in Fallout 3, but less stable and coherent than its Fallout 2 incarnation.' },
+      railroad_f3: { score: 24, reach: 18, threat: 12, cohesion: 36, rationale: 'In Fallout 3 the Railroad is mostly a trace clandestine presence rather than a region-shaping force.' },
+      ncr_fnv: { score: 92, reach: 94, threat: 72, cohesion: 71, rationale: 'The dominant state power in New Vegas by footprint and logistics, despite overextension and corruption.' },
+      legion_fnv: { score: 94, reach: 88, threat: 97, cohesion: 91, rationale: 'The Legion is one of the Mojave’s two civilization-scale military powers and an existential threat to rivals.' },
+      house_fnv: { score: 81, reach: 70, threat: 78, cohesion: 93, rationale: 'House commands New Vegas itself and decisive technological assets, but his sphere is narrower than NCR or Legion.' },
+      yesman_fnv: { score: 52, reach: 40, threat: 56, cohesion: 45, rationale: 'Yes Man represents potential control of Vegas, but that power is contingent and highly Courier-dependent.' },
+      boomers_fnv: { score: 48, reach: 24, threat: 82, cohesion: 84, rationale: 'Small in footprint but disproportionately dangerous because of artillery, discipline, and air power.' },
+      bos_fnv: { score: 39, reach: 20, threat: 72, cohesion: 60, rationale: 'Hidden Valley’s chapter is heavily reduced and strategically marginal, despite potent technology.' },
+      followers_fnv: { score: 41, reach: 38, threat: 14, cohesion: 55, rationale: 'Socially meaningful in Freeside and the Mojave, but under-resourced and unable to shape hard power.' },
+      khans_fnv: { score: 37, reach: 28, threat: 42, cohesion: 64, rationale: 'The Great Khans retain identity and regional relevance but are far from hegemonic.' },
+      powder_fnv: { score: 27, reach: 20, threat: 34, cohesion: 22, rationale: 'Locally disruptive rather than strategically dominant; more instability factor than true power bloc.' },
+      bos_f4: { score: 90, reach: 85, threat: 95, cohesion: 90, rationale: 'Maxson’s Brotherhood is one of Fallout 4’s premier hard-power factions, with mobility, logistics, and ideological drive.' },
+      railroad_f4: { score: 43, reach: 34, threat: 28, cohesion: 70, rationale: 'The Fallout 4 Railroad is still covert and niche, but much more organized and consequential than in Fallout 3.' },
+      minutemen_f4: { score: 63, reach: 61, threat: 48, cohesion: 52, rationale: 'The Minutemen can become regionally significant, but their real power depends heavily on player restoration.' },
+      institute_f4: { score: 91, reach: 72, threat: 98, cohesion: 94, rationale: 'The Institute’s covert reach, synthetic infiltration, and technological superiority make it one of the Commonwealth’s most powerful actors.' },
+      thinktank_fnv: { score: 58, reach: 18, threat: 96, cohesion: 73, rationale: 'Big MT is geographically isolated but capable of absurd-scale scientific harm if fully unleashed.' },
+      rangers_f2: { score: 33, reach: 20, threat: 32, cohesion: 66, rationale: 'Prestigious and capable, but not a mass sovereign power in their own right.' },
+      whiteglove_fnv: { score: 31, reach: 18, threat: 24, cohesion: 62, rationale: 'Socially notable within Vegas high society, but narrow in overall strategic effect.' },
+      kings_fnv: { score: 35, reach: 26, threat: 26, cohesion: 69, rationale: 'Important in Freeside politics and street order, though not a large territorial actor.' },
+      atom_f4: { score: 29, reach: 18, threat: 38, cohesion: 63, rationale: 'Fanatical and resilient in pockets, but not a major Commonwealth-wide power.' },
+      gunners_f4: { score: 56, reach: 44, threat: 70, cohesion: 74, rationale: 'The Gunners are a serious professionalized force with broad operational presence across Fallout 4.' },
+      hubologists_f2: { score: 18, reach: 14, threat: 10, cohesion: 38, rationale: 'Memorable and manipulative, but fundamentally marginal in hard-power terms.' },
+      talon_f3: { score: 44, reach: 38, threat: 52, cohesion: 61, rationale: 'A dangerous mercenary network with visible field presence, though not a true sovereign actor.' },
+      diamondcity_f4: { score: 47, reach: 41, threat: 24, cohesion: 66, rationale: 'Diamond City is the Commonwealth’s premier urban hub, influential more through centrality than military force.' },
+      crimson_f2: { score: 40, reach: 43, threat: 16, cohesion: 67, rationale: 'Crimson Caravan wields economic reach and soft corruption, especially in Fallout 2’s growing order.' },
+      crimson_fnv: { score: 45, reach: 48, threat: 18, cohesion: 69, rationale: 'In New Vegas the Caravan’s commercial entanglement makes it a stronger political-economic actor.' },
+      vangraff_fnv: { score: 34, reach: 20, threat: 48, cohesion: 61, rationale: 'The Van Graffs are dangerous and wealthy, but their effective sphere remains narrow.' },
+      fiends_fnv: { score: 26, reach: 24, threat: 40, cohesion: 16, rationale: 'Violent and destabilizing, but strategically incoherent and incapable of durable rule.' },
+      vipers_f1: { score: 14, reach: 10, threat: 20, cohesion: 20, rationale: 'A minor raider presence rather than a major force in Fallout 1.' },
+      skulz_f1: { score: 12, reach: 8, threat: 16, cohesion: 18, rationale: 'A tiny local gang with nuisance-level rather than wasteland-shaping impact.' },
+      khans_f1: { score: 21, reach: 12, threat: 30, cohesion: 40, rationale: 'Dangerous to locals, but still a relatively small raider tribe in Fallout 1.' },
+      hub_f1: { score: 61, reach: 64, threat: 18, cohesion: 70, rationale: 'The Hub is one of Fallout 1’s most economically central settlements and a major node of regional life.' },
+      blades_f1: { score: 25, reach: 16, threat: 24, cohesion: 52, rationale: 'The Blades matter in the Boneyard, but their influence remains local and insurgent.' },
+      jackals_fnv: { score: 13, reach: 10, threat: 18, cohesion: 18, rationale: 'A low-level raider band with little beyond local predation.' },
+      triggermen_f4: { score: 23, reach: 16, threat: 24, cohesion: 47, rationale: 'Organized and flavorful, but still a niche criminal force.' },
+      atomcats_f4: { score: 15, reach: 9, threat: 14, cohesion: 34, rationale: 'Culturally memorable, strategically minor.' },
+      shi_f2: { score: 54, reach: 34, threat: 62, cohesion: 81, rationale: 'The Shi are compact but technologically advanced and politically meaningful within San Francisco.' },
+      regulators_f3: { score: 19, reach: 16, threat: 18, cohesion: 39, rationale: 'A scattered vigilante current rather than a faction that shapes the Capital Wasteland at scale.' },
+      slavers_f3: { score: 36, reach: 22, threat: 46, cohesion: 58, rationale: 'Paradise Falls is regionally ugly and influential within the slave economy, but still limited in overall scope.' },
+      pitt_f3: { score: 57, reach: 36, threat: 72, cohesion: 74, rationale: 'The Pitt is a harsh industrial polity with serious local power and long-term strategic potential.' },
+      sorrows_fnv: { score: 22, reach: 16, threat: 12, cohesion: 51, rationale: 'Morally distinct and locally meaningful, but minor in broader Mojave politics.' },
+      repconn_fnv: { score: 17, reach: 10, threat: 12, cohesion: 41, rationale: 'The Bright Followers are narratively memorable but politically tiny.' },
+      goodsprings_fnv: { score: 21, reach: 18, threat: 10, cohesion: 61, rationale: 'Goodsprings is locally resilient and symbolically important, but very small in strategic terms.' },
+      novac_fnv: { score: 24, reach: 20, threat: 14, cohesion: 59, rationale: 'Novac is a viable local settlement with defensive will, yet remains minor in Mojave-wide power politics.' },
+      omertas_fnv: { score: 39, reach: 28, threat: 42, cohesion: 76, rationale: 'The Omertas are a serious internal Vegas criminal player with real conspiratorial potential, though their sphere is narrow.' },
+      mordinos_f2: { score: 37, reach: 30, threat: 38, cohesion: 71, rationale: 'The Mordinos are one of New Reno’s major criminal houses, influential through drugs, violence, and family power.' },
+      salvatores_f2: { score: 42, reach: 30, threat: 52, cohesion: 74, rationale: 'The Salvatores are among New Reno’s most dangerous families due to centralized discipline and access to superior firepower.' },
+      bishops_f2: { score: 40, reach: 34, threat: 34, cohesion: 70, rationale: 'The Bishops balance organized crime with political networking, making them one of New Reno’s most quietly influential factions.' },
+      wrights_f2: { score: 33, reach: 26, threat: 24, cohesion: 68, rationale: 'The Wrights are less overtly brutal than rival families, but they remain a structured and meaningful criminal power in New Reno.' }
+    };
+
+    function deriveInfluenceProfile(faction) {
+      return influenceProfiles[faction.id] || { score: 40, reach: 30, threat: 30, cohesion: 50, rationale: 'Fallback profile.' };
+    }
+
+    function deriveInfluence(faction) {
+      return deriveInfluenceProfile(faction).score;
+    }
+
+    function influenceRadius(faction) {
+      return (8 + deriveInfluence(faction) * 0.082).toFixed(2);
+    }
+
+    function renderDNA(faction) {
+      if (!faction) {
+        dnaGrid.innerHTML = ['Authoritarian','Individualist','Collectivist','Technocratic','Militaristic','Egalitarian','Spiritual','Mercantile','Chaotic']
+          .map(label => `
+            <div class="dnaRow">
+              <div class="dnaLabel">${label}</div>
+              <div class="dnaBar"><div class="dnaFill" style="width: 0%"></div></div>
+              <div class="dnaValue">--</div>
+            </div>
+          `).join('');
+        return;
+      }
+
+      dnaGrid.innerHTML = deriveDNA(faction).map(([label, value]) => `
+        <div class="dnaRow">
+          <div class="dnaLabel">${label}</div>
+          <div class="dnaBar"><div class="dnaFill" style="width: ${value}%"></div></div>
+          <div class="dnaValue">${value}%</div>
+        </div>
+      `).join('');
+    }
+
+    function updateSoundUI() {
+      const label = soundEnabled ? 'Sound: ON' : 'Sound: OFF';
+      if (soundToggleBoot) soundToggleBoot.textContent = label;
+      if (soundToggleTop) soundToggleTop.textContent = label;
+      if (ambientTopBadge) {
+        ambientTopBadge.textContent = `Vault Ambience: ${ambientEnabled ? 'ON' : 'OFF'}`;
+        ambientTopBadge.style.opacity = ambientEnabled ? '1' : '0.72';
+        ambientTopBadge.style.cursor = 'pointer';
+      }
+    }
+
+    function toggleSoundState() {
+      soundEnabled = !soundEnabled;
+      if (!soundEnabled) {
+        stopBootHum();
+        stopAmbientRadio();
+      } else if (bootFinished && ambientEnabled) {
+        startAmbientRadio();
+      }
+      updateSoundUI();
+    }
+
+    if (soundToggleBoot) {
+      soundToggleBoot.addEventListener('click', toggleSoundState);
+    }
+    if (soundToggleTop) {
+      soundToggleTop.addEventListener('click', toggleSoundState);
+    }
+
+    
+
+    if (ambientTopBadge) {
+      ambientTopBadge.addEventListener('click', () => {
+        ambientEnabled = !ambientEnabled;
+        if (ambientEnabled && soundEnabled && bootFinished) startAmbientRadio();
+        else stopAmbientRadio();
+        updateSoundUI();
+      });
+    }
+
+    updateSoundUI();
+
+    function toggleCompareFaction(factionId) {
+      const index = state.compareIds.indexOf(factionId);
+      if (index >= 0) {
+        state.compareIds.splice(index, 1);
+      } else {
+        if (state.compareIds.length >= 3) state.compareIds.shift();
+        state.compareIds.push(factionId);
+      }
+    }
+
+    function renderComparison() {
+      const compared = state.compareIds
+        .map(id => factions.find(f => f.id === id))
+        .filter(Boolean);
+
+      if (compared.length === 0) {
+        compareContent.className = 'compareEmpty';
+        compareContent.innerHTML = 'No factions selected for comparison yet.';
+        return;
+      }
+
+      const comparedDNA = compared.map(f => ({ faction: f, dna: deriveDNA(f) }));
+      const statLabels = comparedDNA[0].dna.map(([label]) => label);
+
+      const cards = compared.map(f => `
+        <div class="compareCard">
+          <div class="compareCardHead">
+            <span class="badge">${f.symbol}</span>
+            <strong>${f.fullName}</strong>
+          </div>
+          <div class="compareCardMeta">${f.game} • ${Array.isArray(f.type) ? f.type.join(' • ') : f.type}<br />${f.ideology}<br />Influence: ${deriveInfluenceProfile(f).score}% • Reach: ${deriveInfluenceProfile(f).reach}% • Threat: ${deriveInfluenceProfile(f).threat}% • Cohesion: ${deriveInfluenceProfile(f).cohesion}%<br />Coords: ${formatCoords(f)}</div>
+        </div>
+      `).join('');
+
+      const statRows = statLabels.map((label, statIndex) => {
+        const values = comparedDNA.map(entry => entry.dna[statIndex][1]);
+        const leader = Math.max(...values);
+        return `
+          <div class="compareStatRow">
+            <div class="compareStatLabel">${label}</div>
+            ${values.map(value => `
+              <div class="compareValue">
+                <div class="compareMiniBar"><div class="compareMiniFill" style="width:${value}%"></div></div>
+                <div class="compareNumber">${value}%</div>
+              </div>
+            `).join('')}
+            ${Array.from({ length: 3 - values.length }).map(() => '<div></div>').join('')}
+          </div>
+        `;
+      }).join('');
+
+      let deltaHtml = '';
+      if (compared.length >= 2) {
+        const primary = comparedDNA[0];
+        const secondary = comparedDNA[1];
+        const deltas = primary.dna.map(([label, value], idx) => {
+          const other = secondary.dna[idx][1];
+          const diff = value - other;
+          const signed = diff > 0 ? `+${diff}` : `${diff}`;
+          return `<span>${label}: ${signed}%</span>`;
+        }).slice(0, 4).join(' • ');
+        deltaHtml = `<div class="compareDelta">Primary delta (${primary.faction.name} vs ${secondary.faction.name}): ${deltas}</div>`;
+      }
+
+      compareContent.className = 'compareGrid';
+      compareContent.innerHTML = `
+        <div class="compareCards">${cards}</div>
+        <div class="compareStats">${statRows}</div>
+        ${deltaHtml}
+      `;
+    }
+
+    function setDetails(faction) {
+      if (!faction) {
+        detailBadge.textContent = '☢';
+        detailName.textContent = 'Hover or click a faction';
+        detailGame.textContent = 'Timeline-aware faction profile';
+        detailCoords.textContent = 'Coordinates: —';
+        detailBody.textContent = 'Use the timeline slider, game, type, and layer filters to isolate factions. Hover gives a quick tooltip; clicking a point or a registry card locks the detailed profile here.';
+        renderDNA(null);
+        return;
+      }
+      detailBadge.textContent = faction.symbol;
+      detailName.textContent = faction.fullName;
+      const influenceProfile = deriveInfluenceProfile(faction);
+      const typeLabel = Array.isArray(faction.type) ? faction.type.join(' • ') : faction.type;
+      detailGame.textContent = `${faction.game} • ${typeLabel} • ${faction.ideology} • Influence: ${influenceProfile.score}% • Reach: ${influenceProfile.reach}% • Threat: ${influenceProfile.threat}% • Cohesion: ${influenceProfile.cohesion}% • Layers: ${faction.layers.join(', ')}`;
+      detailCoords.textContent = `Coordinates: ${formatCoords(faction)}`;
+      detailBody.textContent = `${faction.summary} ${influenceProfile.rationale}`;
+      renderDNA(faction);
+    }
+
+    function showTooltip(evt, faction) {
+      const influenceProfile = deriveInfluenceProfile(faction);
+      tooltip.innerHTML = `<strong>${faction.fullName}</strong><div class="tipMeta">${faction.game} • ${faction.ideology}</div><div style="margin-top:6px;">${faction.summary}</div><div class="tipMeta" style="margin-top:6px;">Influence: ${influenceProfile.score}% • Reach: ${influenceProfile.reach}% • Threat: ${influenceProfile.threat}% • Cohesion: ${influenceProfile.cohesion}% • Coords: ${formatCoords(faction)}</div>`;
+      tooltip.style.left = `${evt.clientX + 8}px`;
+      tooltip.style.top = `${evt.clientY + 8}px`;
+      tooltip.style.opacity = '1';
+    }
+
+    function hideTooltip() { tooltip.style.opacity = '0'; }
+
+    function renderHeatmap(visible) {
+      heatmapLayer.innerHTML = '';
+      if (!state.heatmap) return;
+
+      const quadColors = [
+        { x: 140, y: 140, width: 560, height: 560, fill: 'rgba(60,210,120,0.15)' },
+        { x: 700, y: 140, width: 560, height: 560, fill: 'rgba(70,160,255,0.15)' },
+        { x: 140, y: 700, width: 560, height: 560, fill: 'rgba(255,170,70,0.15)' },
+        { x: 700, y: 700, width: 560, height: 560, fill: 'rgba(255,80,80,0.15)' }
+      ];
+
+      quadColors.forEach(quad => {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', quad.x);
+        rect.setAttribute('y', quad.y);
+        rect.setAttribute('width', quad.width);
+        rect.setAttribute('height', quad.height);
+        rect.setAttribute('fill', quad.fill);
+        heatmapLayer.appendChild(rect);
+      });
+
+      const centerGlow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      centerGlow.setAttribute('cx', '700');
+      centerGlow.setAttribute('cy', '700');
+      centerGlow.setAttribute('r', '250');
+      centerGlow.setAttribute('fill', 'rgba(255,245,170,0.10)');
+      heatmapLayer.appendChild(centerGlow);
+
+      visible.forEach(faction => {
+        const influence = deriveInfluence(faction);
+        let fill = 'rgba(255,245,170,0.18)';
+        if (faction.x < 0 && faction.y < 0) fill = `rgba(60,210,120,${0.10 + influence / 500})`;
+        if (faction.x > 0 && faction.y < 0) fill = `rgba(70,160,255,${0.10 + influence / 500})`;
+        if (faction.x < 0 && faction.y > 0) fill = `rgba(255,170,70,${0.10 + influence / 500})`;
+        if (faction.x > 0 && faction.y > 0) fill = `rgba(255,80,80,${0.10 + influence / 500})`;
+
+        const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        halo.setAttribute('cx', coordX(faction.x));
+        halo.setAttribute('cy', coordY(faction.y));
+        halo.setAttribute('r', 28 + influence * 0.38);
+        halo.setAttribute('fill', fill);
+        heatmapLayer.appendChild(halo);
+      });
+    }
+
+    function renderConnections(visible) {
+      const links = [
+        ['ncr_f2','ncr_fnv'],
+        ['followers_f1','followers_fnv'],
+        ['railroad_f3','railroad_f4'],
+        ['bos_f1','bos_f3'],
+        ['bos_f3','bos_fnv'],
+        ['bos_fnv','bos_f4'],
+        ['house_fnv','yesman_fnv'],
+        ['crimson_f2','crimson_fnv']
+      ];
+      connections.innerHTML = '';
+      const selectedVisible = state.selectedId ? visible.find(f => f.id === state.selectedId) : null;
+      links.forEach(([aId, bId]) => {
+        const a = visible.find(f => f.id === aId);
+        const b = visible.find(f => f.id === bId);
+        if (!a || !b) return;
+        if (selectedVisible && a.id !== selectedVisible.id && b.id !== selectedVisible.id) return;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', coordX(a.x));
+        line.setAttribute('y1', coordY(a.y));
+        line.setAttribute('x2', coordX(b.x));
+        line.setAttribute('y2', coordY(b.y));
+        connections.appendChild(line);
+      });
+    }
+
+    function getVisibleSignature(visible) {
+      return visible.map(f => f.id).join('|');
+    }
+
+    function cloneLabelNode(node) {
+      return {
+        faction: node.faction,
+        pointX: node.pointX,
+        pointY: node.pointY,
+        text: node.text,
+        mode: node.mode,
+        anchor: node.anchor,
+        ring: node.ring,
+        angle: node.angle,
+        baseX: node.baseX,
+        baseY: node.baseY,
+        labelX: node.labelX,
+        labelY: node.labelY,
+        rect: { ...node.rect },
+        priority: node.priority
+      };
+    }
+
+    function renderPoints(visible) {
+      const zoomT = Math.max(0, state.viewScale - 1);
+      const ringRadiusBoost = 1 + zoomT * 0.38;
+      const labelDistanceBoost = 1 + zoomT * 0.28;
+      const repelBoost = 1 + zoomT * 0.34;
+      const safeZoneBoost = 1 + zoomT * 0.16;
+      const leaderLengthBoost = 1 + zoomT * 0.22;
+      pointsLayer.innerHTML = '';
+      focusLayer.innerHTML = '';
+      const focusedVisible = state.focusId ? visible.find(f => f.id === state.focusId) : null;
+      const labelMode = state.labelMode;
+      let labelNodes = [];
+      const occupiedRects = [];
+      const occupiedSegments = [];
+      const safeBounds = {
+        left: 84 * safeZoneBoost,
+        right: 1400 - (84 * safeZoneBoost),
+        top: 92 * safeZoneBoost,
+        bottom: 1400 - (92 * safeZoneBoost)
+      };
+
+      function getLabelText(faction) {
+        if (labelMode === 'hover') return '';
+        if (labelMode === 'compact') return faction.fullName.replace(/ \([^)]*\)/g, '');
+        if (labelMode === 'full') return faction.fullName;
+        return faction.name;
+      }
+
+      function estimateRect(text, x, y, anchor, mode) {
+        const charWidth = mode === 'full' ? 7.55 : 7.0;
+        const horizontalPadding = mode === 'full' ? 26 : 22;
+        const width = Math.max(mode === 'full' ? 84 : 64, text.length * charWidth + horizontalPadding);
+        const height = mode === 'full' ? 22 : 20;
+        const top = y - 15;
+        const left = anchor === 'end' ? x - width : x;
+        return { left, top, right: left + width, bottom: top + height, width, height };
+      }
+
+      function overlapAmount(a, b) {
+        const ox = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+        const oy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        return ox * oy;
+      }
+
+      function segmentsCross(a1x, a1y, a2x, a2y, b1x, b1y, b2x, b2y) {
+        const ccw = (ax, ay, bx, by, cx, cy) => (cy - ay) * (bx - ax) > (by - ay) * (cx - ax);
+        return (ccw(a1x, a1y, b1x, b1y, b2x, b2y) !== ccw(a2x, a2y, b1x, b1y, b2x, b2y)) &&
+               (ccw(a1x, a1y, a2x, a2y, b1x, b1y) !== ccw(a1x, a1y, a2x, a2y, b2x, b2y));
+      }
+
+      function segmentPenalty(px, py, rect, anchor) {
+        const attachX = anchor === 'start' ? rect.left : rect.right;
+        const attachY = Math.max(rect.top + 6, Math.min(py, rect.bottom - 6));
+        let penalty = 0;
+        occupiedSegments.forEach(seg => {
+          if (segmentsCross(px, py, attachX, attachY, seg.x1, seg.y1, seg.x2, seg.y2)) penalty += 320;
+        });
+        return penalty;
+      }
+
+      function baseCandidates(px, py, mode) {
+        const ringConfigs = mode === 'full'
+          ? [
+              { radius: 16 * ringRadiusBoost, vertical: 16 * ringRadiusBoost },
+              { radius: 22 * ringRadiusBoost, vertical: 22 * ringRadiusBoost },
+              { radius: 30 * ringRadiusBoost, vertical: 30 * ringRadiusBoost },
+              { radius: 40 * ringRadiusBoost, vertical: 40 * ringRadiusBoost }
+            ]
+          : [
+              { radius: 12 * ringRadiusBoost, vertical: 12 * ringRadiusBoost },
+              { radius: 18 * ringRadiusBoost, vertical: 18 * ringRadiusBoost },
+              { radius: 24 * ringRadiusBoost, vertical: 24 * ringRadiusBoost },
+              { radius: 32 * ringRadiusBoost, vertical: 32 * ringRadiusBoost }
+            ];
+
+        const angleSteps = [0, 25, 45, 60, 90, 120, 135, 155, 180, 205, 225, 240, 270, 300, 315, 335];
+        const candidates = [];
+        ringConfigs.forEach((ring, ringIndex) => {
+          angleSteps.forEach((deg, angleIndex) => {
+            const rad = (deg * Math.PI) / 180;
+            const dx = Math.cos(rad);
+            const dy = Math.sin(rad);
+            candidates.push({
+              x: px + dx * ring.radius,
+              y: py + dy * ring.vertical,
+              dx,
+              dy,
+              degrees: deg,
+              anchor: dx >= 0 ? 'start' : 'end',
+              ring: ringIndex,
+              angle: angleIndex,
+              distance: ring.radius
+            });
+          });
+        });
+        return candidates;
+      }
+
+      function chooseInitialPlacement(px, py, text, mode) {
+        const ownIconRadius = 30;
+        const otherIconRadius = mode === 'full' ? 30 : 26;
+
+        function rectHitsPoint(rect, cx, cy, radius) {
+          const closestX = Math.max(rect.left, Math.min(cx, rect.right));
+          const closestY = Math.max(rect.top, Math.min(cy, rect.bottom));
+          const dx = closestX - cx;
+          const dy = closestY - cy;
+          return (dx * dx + dy * dy) < (radius * radius);
+        }
+
+        let best = null;
+        let bestScore = Infinity;
+        baseCandidates(px, py, mode).forEach(candidate => {
+          const rect = estimateRect(text, candidate.x, candidate.y, candidate.anchor, mode);
+          const outPenalty = Math.max(0, safeBounds.left - rect.left) + Math.max(0, rect.right - safeBounds.right) + Math.max(0, safeBounds.top - rect.top) + Math.max(0, rect.bottom - safeBounds.bottom);
+          const distPenalty = candidate.distance * (1.85 / labelDistanceBoost);
+          const edgePenalty = candidate.anchor === 'start'
+            ? Math.max(0, rect.right - (safeBounds.right - 18))
+            : Math.max(0, (safeBounds.left + 18) - rect.left);
+          const ringPenalty = candidate.ring * (mode === 'full' ? 10 : 8);
+          const rectOverlapPenalty = occupiedRects.reduce((sum, other) => sum + overlapAmount(rect, other) * 0.42, 0);
+          const lineCrossPenalty = segmentPenalty(px, py, rect, candidate.anchor);
+          let iconPenalty = 0;
+          visible.forEach(other => {
+            const ox = coordX(other.x);
+            const oy = coordY(other.y);
+            const radius = ox === px && oy === py ? ownIconRadius : otherIconRadius;
+            if (rectHitsPoint(rect, ox, oy, radius)) iconPenalty += ox === px && oy === py ? 2600 : 1800;
+          });
+          const biasPenalty = (candidate.anchor === 'start' ? 0 : 6) + (Math.abs(candidate.dy) > 0.92 ? 8 : 0);
+          const score = outPenalty * 18 + distPenalty + edgePenalty * 4 + ringPenalty + rectOverlapPenalty + lineCrossPenalty + iconPenalty + biasPenalty;
+          if (score < bestScore) {
+            bestScore = score;
+            best = { ...candidate, rect };
+          }
+        });
+        return best;
+      }
+
+      function clampRectPlacement(node) {
+        const pad = 4;
+        const width = node.rect.width;
+        const maxOffset = (node.mode === 'full' ? 52 : 40) * labelDistanceBoost;
+        const deltaX = node.labelX - node.baseX;
+        const deltaY = node.labelY - node.baseY;
+        const len = Math.hypot(deltaX, deltaY) || 1;
+        if (len > maxOffset) {
+          const scale = maxOffset / len;
+          node.labelX = node.baseX + deltaX * scale;
+          node.labelY = node.baseY + deltaY * scale;
+        }
+
+        if (node.anchor === 'start') {
+          node.labelX = Math.max(safeBounds.left + pad, Math.min(node.labelX, safeBounds.right - width - pad));
+        } else {
+          node.labelX = Math.min(safeBounds.right - pad, Math.max(node.labelX, safeBounds.left + width + pad));
+        }
+        node.labelY = Math.max(safeBounds.top + 14, Math.min(node.labelY, safeBounds.bottom - 4));
+        node.rect = estimateRect(node.text, node.labelX, node.labelY, node.anchor, node.mode);
+      }
+
+      function repelFromIcons(node) {
+        const otherIconRadius = node.mode === 'full' ? 30 : 26;
+        for (let pass = 0; pass < 4; pass += 1) {
+          let moved = false;
+          visible.forEach(other => {
+            const ox = coordX(other.x);
+            const oy = coordY(other.y);
+            const radius = other.id === node.faction.id ? 32 : otherIconRadius;
+            const closestX = Math.max(node.rect.left, Math.min(ox, node.rect.right));
+            const closestY = Math.max(node.rect.top, Math.min(oy, node.rect.bottom));
+            const dx = closestX - ox;
+            const dy = closestY - oy;
+            const dist = Math.hypot(dx, dy) || 1;
+            if (dist < radius) {
+              const force = (radius - dist) * 0.95;
+              node.labelX += ((dx || (node.anchor === 'start' ? 1 : -1)) / dist) * force;
+              node.labelY += ((dy || (node.labelY <= oy ? -1 : 1)) / dist) * force;
+              moved = true;
+            }
+          });
+          clampRectPlacement(node);
+          if (!moved) break;
+        }
+      }
+
+      function relaxLabels(nodes) {
+        function attachPoint(node) {
+          return {
+            x: node.anchor === 'start' ? node.rect.left : node.rect.right,
+            y: Math.max(node.rect.top + 6, Math.min(node.pointY, node.rect.bottom - 6))
+          };
+        }
+
+        for (let iteration = 0; iteration < 34; iteration += 1) {
+          for (let i = 0; i < nodes.length; i += 1) {
+            const a = nodes[i];
+            for (let j = i + 1; j < nodes.length; j += 1) {
+              const b = nodes[j];
+              const overlap = overlapAmount(a.rect, b.rect);
+              if (overlap) {
+                const ax = (a.rect.left + a.rect.right) / 2;
+                const ay = (a.rect.top + a.rect.bottom) / 2;
+                const bx = (b.rect.left + b.rect.right) / 2;
+                const by = (b.rect.top + b.rect.bottom) / 2;
+                const vx = ax - bx;
+                const vy = ay - by;
+                const mag = Math.hypot(vx, vy) || 1;
+                const force = Math.min(20, (3.6 + overlap / 135) * repelBoost);
+                a.labelX += (vx / mag) * force;
+                a.labelY += (vy / mag) * force;
+                b.labelX -= (vx / mag) * force;
+                b.labelY -= (vy / mag) * force;
+              }
+
+              const aAttach = attachPoint(a);
+              const bAttach = attachPoint(b);
+              if (segmentsCross(a.pointX, a.pointY, aAttach.x, aAttach.y, b.pointX, b.pointY, bAttach.x, bAttach.y)) {
+                const ayShift = a.pointY <= b.pointY ? -7 : 7;
+                const byShift = b.pointY <= a.pointY ? -7 : 7;
+                a.labelY += ayShift;
+                b.labelY += byShift;
+                a.labelX += (a.anchor === 'start' ? 1 : -1) * 5;
+                b.labelX += (b.anchor === 'start' ? 1 : -1) * 5;
+              }
+
+              const springA = (0.085 + a.ring * 0.022) / repelBoost;
+              const springB = (0.085 + b.ring * 0.022) / repelBoost;
+              a.labelX += (a.baseX - a.labelX) * springA;
+              a.labelY += (a.baseY - a.labelY) * springA;
+              b.labelX += (b.baseX - b.labelX) * springB;
+              b.labelY += (b.baseY - b.labelY) * springB;
+
+              clampRectPlacement(a);
+              clampRectPlacement(b);
+              repelFromIcons(a);
+              repelFromIcons(b);
+            }
+          }
+        }
+      }
+
+      if (focusedVisible) {
+        const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        halo.setAttribute('class', 'focusHalo');
+        halo.setAttribute('cx', coordX(focusedVisible.x));
+        halo.setAttribute('cy', coordY(focusedVisible.y));
+        halo.setAttribute('r', Number(influenceRadius(focusedVisible)) + 12);
+        focusLayer.appendChild(halo);
+      }
+
+      const labelCandidates = [];
+      const visibleSignature = getVisibleSignature(visible);
+      const zoomBucket = Math.round(state.viewScale * 20) / 20;
+      const layoutCacheKey = `${visibleSignature}::${labelMode}::${zoomBucket}`;
+
+      visible.forEach(faction => {
+        const px = coordX(faction.x);
+        const py = coordY(faction.y);
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'point');
+        g.setAttribute('transform', `translate(${px},${py})`);
+        if (state.focusId === faction.id) g.classList.add('active');
+        if (state.compareIds.includes(faction.id)) g.classList.add('compareSelected');
+        if (focusedVisible && state.focusId !== faction.id) g.classList.add('hidden');
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', influenceRadius(faction));
+        circle.setAttribute('fill', 'rgba(7,17,10,0.96)');
+        circle.setAttribute('stroke', 'var(--dot)');
+        circle.setAttribute('stroke-width', '2.2');
+        circle.setAttribute('filter', 'url(#glow)');
+
+        const symbol = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        symbol.setAttribute('text-anchor', 'middle');
+        symbol.setAttribute('y', '5');
+        symbol.setAttribute('font-size', '12');
+        symbol.setAttribute('fill', 'var(--bright)');
+        symbol.textContent = faction.symbol;
+
+        g.appendChild(circle);
+        g.appendChild(symbol);
+
+        const labelText = getLabelText(faction);
+        if (labelText) {
+          const priority = (faction.layers.includes('Core') ? 100 : 0) + (state.focusId === faction.id ? 1000 : 0) + deriveInfluence(faction) - labelText.length * 0.08;
+          labelCandidates.push({ faction, px, py, labelText, priority });
+        }
+
+        g.addEventListener('mouseenter', e => {
+          showTooltip(e, faction);
+          if (!state.selectedId) setDetails(faction);
+        });
+        g.addEventListener('mousemove', e => showTooltip(e, faction));
+        g.addEventListener('mouseleave', () => {
+          hideTooltip();
+          if (!state.selectedId) setDetails(null);
+        });
+        g.addEventListener('click', (event) => {
+          if (event.shiftKey || state.compareModifier) {
+            toggleCompareFaction(faction.id);
+            render('full');
+          } else {
+            if (state.focusId === faction.id) {
+              state.focusId = null;
+              state.selectedId = null;
+              setDetails(null);
+              resetCompassView(true);
+            } else {
+              state.focusId = faction.id;
+              state.selectedId = faction.id;
+              setDetails(faction);
+              centerOnFaction(faction);
+            }
+            render('focus');
+          }
+        });
+        pointsLayer.appendChild(g);
+      });
+
+      if (labelMode !== 'hover') {
+        const cachedLayout = labelLayoutCache.get(layoutCacheKey);
+        if (cachedLayout) {
+          labelNodes = cachedLayout.map(cloneLabelNode);
+        } else {
+          labelCandidates.sort((a, b) => b.priority - a.priority).forEach(entry => {
+            const placement = chooseInitialPlacement(entry.px, entry.py, entry.labelText, labelMode);
+            if (!placement) return;
+            const node = {
+              faction: entry.faction,
+              pointX: entry.px,
+              pointY: entry.py,
+              text: entry.labelText,
+              mode: labelMode,
+              anchor: placement.anchor,
+              ring: placement.ring,
+              angle: placement.angle,
+              baseX: placement.x,
+              baseY: placement.y,
+              labelX: placement.x,
+              labelY: placement.y,
+              rect: placement.rect,
+              priority: entry.priority
+            };
+            clampRectPlacement(node);
+            repelFromIcons(node);
+            labelNodes.push(node);
+            occupiedRects.push(node.rect);
+            const attachX = node.anchor === 'start' ? node.rect.left : node.rect.right;
+            const attachY = Math.max(node.rect.top + 6, Math.min(node.pointY, node.rect.bottom - 6));
+            occupiedSegments.push({ x1: node.pointX, y1: node.pointY, x2: attachX, y2: attachY });
+          });
+
+          relaxLabels(labelNodes);
+          labelLayoutCache.set(layoutCacheKey, labelNodes.map(cloneLabelNode));
+        }
+
+        labelNodes.forEach(node => {
+          const rawAttachX = node.anchor === 'start' ? node.rect.left : node.rect.right;
+          const rawAttachY = Math.max(node.rect.top + 6, Math.min(node.pointY, node.rect.bottom - 6));
+          const attachX = node.pointX + (rawAttachX - node.pointX) * leaderLengthBoost;
+          const attachY = node.pointY + (rawAttachY - node.pointY) * leaderLengthBoost;
+          const isDimmed = !!focusedVisible && node.faction.id !== state.focusId;
+
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('class', `labelLine ${isDimmed ? 'labelDimmed' : 'labelFocused'}`);
+          line.setAttribute('x1', node.pointX);
+          line.setAttribute('y1', node.pointY);
+          line.setAttribute('x2', attachX);
+          line.setAttribute('y2', attachY);
+          pointsLayer.appendChild(line);
+
+          const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          bg.setAttribute('class', `pointLabelBg ${isDimmed ? 'labelDimmed' : 'labelFocused'}`);
+          bg.setAttribute('x', node.rect.left - 4);
+          bg.setAttribute('y', node.rect.top - 2);
+          bg.setAttribute('width', node.rect.width + 8);
+          bg.setAttribute('height', node.rect.height + 5);
+          pointsLayer.appendChild(bg);
+
+          const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          label.setAttribute('class', `pointLabel ${isDimmed ? 'labelDimmed' : 'labelFocused'}`);
+          label.setAttribute('x', node.labelX);
+          label.setAttribute('y', node.labelY);
+          label.setAttribute('text-anchor', node.anchor);
+          label.textContent = node.text;
+          pointsLayer.appendChild(label);
+        });
+      }
+    }
+
+    function renderLegend(visible) {
+      legendGrid.innerHTML = '';
+      visible.forEach(faction => {
+        const item = document.createElement('div');
+        item.className = 'legendItem';
+        if (state.compareIds.includes(faction.id)) item.classList.add('compareSelected');
+        item.innerHTML = `
+          <div class="legendHead">
+            <span class="badge">${faction.symbol}</span>
+            <strong>${faction.fullName}</strong>
+            <span class="coords">${formatCoords(faction)}</span>
+          </div>
+          <div class="legendText">${faction.summary}<br /><span class="coords">Influence: ${deriveInfluenceProfile(faction).score}% • Reach: ${deriveInfluenceProfile(faction).reach}% • Threat: ${deriveInfluenceProfile(faction).threat}% • Cohesion: ${deriveInfluenceProfile(faction).cohesion}%</span></div>
+        `;
+        item.addEventListener('mouseenter', () => { if (!state.selectedId) setDetails(faction); });
+        item.addEventListener('mouseleave', () => { if (!state.selectedId) setDetails(null); });
+        item.addEventListener('click', (event) => {
+          if (event.shiftKey || state.compareModifier) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleCompareFaction(faction.id);
+            render();
+            return;
+          }
+
+          if (state.selectedId === faction.id && state.focusId !== faction.id) {
+            state.selectedId = null;
+            setDetails(null);
+          } else {
+            state.selectedId = faction.id;
+            setDetails(faction);
+          }
+          render();
+        });
+        legendGrid.appendChild(item);
+      });
+    }
+
+    function renderStatus(visible) {
+      heatmapToggle.classList.toggle('active', state.heatmap);
+      labelFull.classList.toggle('active', state.labelMode === 'full');
+      labelCompact.classList.toggle('active', state.labelMode === 'compact');
+      labelHover.classList.toggle('active', state.labelMode === 'hover');
+      
+      visibleCount.textContent = `Visible factions: ${visible.length}${state.activePreset ? ` • Preset: ${state.activePreset}` : ''}`;
+      statusGames.textContent = `Games: ${state.games.size ? Array.from(state.games).join(', ') : 'all'}`;
+      statusTypes.textContent = `Types: ${state.types.size ? Array.from(state.types).join(', ') : 'all'}`;
+      statusLayers.textContent = `Layers: ${state.layers.size ? Array.from(state.layers).join(', ') : 'all'}`;
+    }
+
+    const bootLinePools = [
+      ['<strong>[ OK ]</strong> Vault-Tec biometric handshake accepted', '<strong>[ OK ]</strong> RobCo monitor phosphors warmed'],
+      ['<strong>[ OK ]</strong> Geiger channel calibrated: background radiation nominal', '<strong>[ OK ]</strong> Dosimeter relay synchronized with Pip-Boy core'],
+      ['<strong>[ OK ]</strong> Vault-Tec archives mounted: faction holotapes indexed', '<strong>[ OK ]</strong> Wasteland records loaded from secure memory sectors'],
+      ['<strong>[ OK ]</strong> S.P.E.C.I.A.L. heuristics matrix aligned', '<strong>[ OK ]</strong> Social doctrine analyzer locked to Vault-Tec baseline'],
+      ['<strong>[ OK ]</strong> Political compass raster projected to CRT grid', '<strong>[ OK ]</strong> Tactical ideology overlay aligned with display lattice'],
+      ['<strong>[ OK ]</strong> Overseer-ready diagnostic mode engaged', '<strong>[WARN]</strong> Surface instability detected... filtering static... resolved']
+    ];
+
+    let audioCtx = null;
+    let humGain = null;
+    let humOsc = null;
+    let humLfo = null;
+    let ambientMaster = null;
+    let ambientNoiseSource = null;
+    let ambientNoiseGain = null;
+    let ambientHumOscA = null;
+    let ambientHumOscB = null;
+    let ambientHumGain = null;
+    let ambientClickTimer = null;
+    let ambientSignalTimer = null;
+    let ambientSignalIndex = 0;
+    let ambientLfo = null;
+    let ambientLfoGain = null;
+    let bootStarted = false;
+    let bootFinished = false;
+
+    function ensureAudioContext() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function createNoiseBuffer(ctx, duration = 2.4) {
+      const length = Math.floor(ctx.sampleRate * duration);
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let brown = 0;
+      let pink0 = 0;
+      let pink1 = 0;
+      let pink2 = 0;
+      for (let i = 0; i < length; i += 1) {
+        const white = Math.random() * 2 - 1;
+        brown = (brown + 0.025 * white) / 1.012;
+        pink0 = 0.992 * pink0 + 0.045 * white;
+        pink1 = 0.969 * pink1 + 0.09 * white;
+        pink2 = 0.866 * pink2 + 0.18 * white;
+        data[i] = (brown * 0.42 + pink0 * 0.22 + pink1 * 0.18 + pink2 * 0.12 + white * 0.04) * 0.92;
+      }
+      return buffer;
+    }
+
+    function stopAmbientClicks() {
+      if (ambientClickTimer) {
+        clearTimeout(ambientClickTimer);
+        ambientClickTimer = null;
+      }
+    }
+
+    function stopAmbientSignals() {
+      if (ambientSignalTimer) {
+        clearTimeout(ambientSignalTimer);
+        ambientSignalTimer = null;
+      }
+    }
+
+    function playVaultSiren(now) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(102, now);
+      osc.frequency.linearRampToValueAtTime(165, now + 2.4);
+      osc.frequency.linearRampToValueAtTime(122, now + 5.1);
+
+      filter.type = 'lowpass';
+      filter.frequency.value = 205;
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.112, now + 1.5);
+      gain.gain.linearRampToValueAtTime(0.074, now + 4.7);
+      gain.gain.linearRampToValueAtTime(0.0001, now + 6.6);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ambientMaster);
+      osc.start(now);
+      osc.stop(now + 6.8);
+    }
+
+    function playVaultElectrical(now) {
+      const oscA = audioCtx.createOscillator();
+      const oscB = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      const drift = audioCtx.createOscillator();
+      const driftGain = audioCtx.createGain();
+
+      oscA.type = 'triangle';
+      oscB.type = 'sine';
+      oscA.frequency.setValueAtTime(248, now);
+      oscB.frequency.setValueAtTime(372, now);
+      oscA.frequency.linearRampToValueAtTime(232, now + 2.8);
+      oscB.frequency.linearRampToValueAtTime(348, now + 2.8);
+
+      filter.type = 'lowpass';
+      filter.frequency.value = 390;
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.058, now + 0.8);
+      gain.gain.linearRampToValueAtTime(0.046, now + 4.4);
+      gain.gain.linearRampToValueAtTime(0.0001, now + 6.2);
+
+      drift.type = 'sine';
+      drift.frequency.value = 0.16;
+      driftGain.gain.value = 5.5;
+      drift.connect(driftGain);
+      driftGain.connect(oscA.frequency);
+
+      oscA.connect(gain);
+      oscB.connect(gain);
+      gain.connect(filter);
+      filter.connect(ambientMaster);
+
+      oscA.start(now);
+      oscB.start(now);
+      drift.start(now);
+      oscA.stop(now + 6.3);
+      oscB.stop(now + 6.3);
+      drift.stop(now + 6.3);
+
+      for (let i = 0; i < 4; i += 1) {
+        const t = now + 0.8 + i * 0.42;
+        const beep = audioCtx.createOscillator();
+        const beepGain = audioCtx.createGain();
+        const beepFilter = audioCtx.createBiquadFilter();
+        beep.type = 'sine';
+        beep.frequency.setValueAtTime(780, t);
+        beep.frequency.linearRampToValueAtTime(860, t + 0.08);
+        beepFilter.type = 'lowpass';
+        beepFilter.frequency.value = 1500;
+        beepGain.gain.setValueAtTime(0.0001, t);
+        beepGain.gain.exponentialRampToValueAtTime(0.042, t + 0.01);
+        beepGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+        beep.connect(beepFilter);
+        beepFilter.connect(beepGain);
+        beepGain.connect(ambientMaster);
+        beep.start(t);
+        beep.stop(t + 0.15);
+      }
+    }
+
+    function playVaultVentilation(now) {
+      const bedBuffer = createNoiseBuffer(audioCtx, 7.2);
+      const bed = audioCtx.createBufferSource();
+      const bedLow = audioCtx.createBiquadFilter();
+      const bedBand = audioCtx.createBiquadFilter();
+      const bedGain = audioCtx.createGain();
+
+      bed.buffer = bedBuffer;
+      bedLow.type = 'lowpass';
+      bedLow.frequency.value = 820;
+      bedBand.type = 'bandpass';
+      bedBand.frequency.value = 380;
+      bedBand.Q.value = 0.9;
+      bedGain.gain.setValueAtTime(0.0001, now);
+      bedGain.gain.linearRampToValueAtTime(0.22, now + 0.9);
+      bedGain.gain.linearRampToValueAtTime(0.18, now + 6.0);
+      bedGain.gain.linearRampToValueAtTime(0.0001, now + 7.2);
+      bed.connect(bedLow);
+      bedLow.connect(bedBand);
+      bedBand.connect(bedGain);
+      bedGain.connect(ambientMaster);
+      bed.start(now + 0.35);
+      bed.stop(now + 7.2);
+
+      const intakeBuffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * 1.9), audioCtx.sampleRate);
+      const intakeData = intakeBuffer.getChannelData(0);
+      for (let i = 0; i < intakeData.length; i += 1) {
+        const t = i / intakeData.length;
+        const swell = Math.sin(Math.min(t, 1) * Math.PI);
+        intakeData[i] = (Math.random() * 2 - 1) * swell * 0.78;
+      }
+      const intake = audioCtx.createBufferSource();
+      const intakeBand = audioCtx.createBiquadFilter();
+      const intakeGain = audioCtx.createGain();
+      intake.buffer = intakeBuffer;
+      intakeBand.type = 'bandpass';
+      intakeBand.frequency.value = 620;
+      intakeBand.Q.value = 0.7;
+      intakeGain.gain.setValueAtTime(0.0001, now);
+      intakeGain.gain.linearRampToValueAtTime(0.28, now + 0.35);
+      intakeGain.gain.linearRampToValueAtTime(0.12, now + 1.5);
+      intakeGain.gain.linearRampToValueAtTime(0.0001, now + 1.9);
+      intake.connect(intakeBand);
+      intakeBand.connect(intakeGain);
+      intakeGain.connect(ambientMaster);
+      intake.start(now);
+      intake.stop(now + 1.9);
+
+      const pumpA = audioCtx.createOscillator();
+      const pumpB = audioCtx.createOscillator();
+      const pumpFilter = audioCtx.createBiquadFilter();
+      const pumpGain = audioCtx.createGain();
+      const pumpLFO = audioCtx.createOscillator();
+      const pumpLFODepth = audioCtx.createGain();
+
+      pumpA.type = 'sawtooth';
+      pumpB.type = 'square';
+      pumpA.frequency.setValueAtTime(46, now + 1.0);
+      pumpB.frequency.setValueAtTime(22, now + 1.0);
+
+      pumpFilter.type = 'lowpass';
+      pumpFilter.frequency.value = 180;
+
+      pumpGain.gain.setValueAtTime(0.0001, now + 1.0);
+      pumpGain.gain.exponentialRampToValueAtTime(0.34, now + 1.1);
+      pumpGain.gain.exponentialRampToValueAtTime(0.26, now + 3.0);
+      pumpGain.gain.exponentialRampToValueAtTime(0.18, now + 4.6);
+      pumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 6.2);
+
+      pumpLFO.type = 'sine';
+      pumpLFO.frequency.value = 2.2;
+      pumpLFODepth.gain.value = 4.5;
+      pumpLFO.connect(pumpLFODepth);
+      pumpLFODepth.connect(pumpA.frequency);
+
+      pumpA.connect(pumpFilter);
+      pumpB.connect(pumpFilter);
+
+      const turbine = audioCtx.createOscillator();
+      const turbineGain = audioCtx.createGain();
+      const turbineFilter = audioCtx.createBiquadFilter();
+
+      turbine.type = 'sine';
+      turbine.frequency.setValueAtTime(8, now + 1.2);
+      turbine.frequency.linearRampToValueAtTime(11, now + 3.5);
+
+      turbineFilter.type = 'lowpass';
+      turbineFilter.frequency.value = 120;
+
+      turbineGain.gain.setValueAtTime(0.0001, now + 1.2);
+      turbineGain.gain.exponentialRampToValueAtTime(0.2, now + 1.5);
+      turbineGain.gain.exponentialRampToValueAtTime(0.16, now + 4.5);
+      turbineGain.gain.exponentialRampToValueAtTime(0.0001, now + 6.2);
+
+      // secondary harmonic layer
+      const turbineHarm = audioCtx.createOscillator();
+      const turbineHarmGain = audioCtx.createGain();
+      turbineHarm.type = 'triangle';
+      turbineHarm.frequency.setValueAtTime(16, now + 1.2);
+      turbineHarmGain.gain.setValueAtTime(0.0001, now + 1.2);
+      turbineHarmGain.gain.exponentialRampToValueAtTime(0.06, now + 1.6);
+      turbineHarmGain.gain.exponentialRampToValueAtTime(0.0001, now + 6.2);
+
+      // rhythmic pulse accent (mechanical hit)
+      const pulse = audioCtx.createOscillator();
+      const pulseGain = audioCtx.createGain();
+      pulse.type = 'square';
+      pulse.frequency.setValueAtTime(2.2, now + 1.2);
+      pulseGain.gain.setValueAtTime(0.0001, now + 1.2);
+      pulseGain.gain.exponentialRampToValueAtTime(0.08, now + 1.5);
+      pulseGain.gain.exponentialRampToValueAtTime(0.0001, now + 6.2);
+
+      // subtle metal resonance
+      const metal = audioCtx.createOscillator();
+      const metalGain = audioCtx.createGain();
+      const metalFilter = audioCtx.createBiquadFilter();
+      metal.type = 'sine';
+      metal.frequency.setValueAtTime(220, now + 1.4);
+      metalFilter.type = 'bandpass';
+      metalFilter.frequency.value = 220;
+      metalFilter.Q.value = 6;
+      metalGain.gain.setValueAtTime(0.0001, now + 1.4);
+      metalGain.gain.exponentialRampToValueAtTime(0.04, now + 1.6);
+      metalGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.2);
+
+      turbine.connect(turbineFilter);
+      turbineFilter.connect(turbineGain);
+      turbineGain.connect(ambientMaster);
+
+      turbineHarm.connect(turbineGain);
+      turbineHarmGain.connect(ambientMaster);
+
+      pulse.connect(pulseGain);
+      pulseGain.connect(ambientMaster);
+
+      metal.connect(metalFilter);
+      metalFilter.connect(metalGain);
+      metalGain.connect(ambientMaster);
+
+      pumpFilter.connect(pumpGain);
+      pumpGain.connect(ambientMaster);
+
+      pumpA.start(now + 1.0);
+      pumpB.start(now + 1.0);
+      pumpLFO.start(now + 1.0);
+      turbine.start(now + 1.2);
+      turbineHarm.start(now + 1.2);
+      pulse.start(now + 1.2);
+      metal.start(now + 1.4);
+
+      pumpA.stop(now + 6.2);
+      pumpB.stop(now + 6.2);
+      pumpLFO.stop(now + 6.2);
+      turbine.stop(now + 6.2);
+      turbineHarm.stop(now + 6.2);
+      pulse.stop(now + 6.2);
+      metal.stop(now + 3.2);
+    }
+
+    function scheduleAmbientSignals() {
+      stopAmbientSignals();
+      if (!audioCtx || !ambientEnabled || !soundEnabled || !bootFinished || !ambientMaster) return;
+      const interval = 23000;
+      ambientSignalTimer = setTimeout(() => {
+        if (!audioCtx || !ambientEnabled || !soundEnabled || !bootFinished || !ambientMaster) return;
+        const now = audioCtx.currentTime;
+        const mode = ambientSignalIndex % 3;
+        if (mode === 0) playVaultSiren(now);
+        if (mode === 1) playVaultElectrical(now);
+        if (mode === 2) playVaultVentilation(now);
+        ambientSignalIndex += 1;
+        scheduleAmbientSignals();
+      }, interval);
+    }
+
+    function scheduleAmbientClicks() {
+      stopAmbientClicks();
+      if (!audioCtx || !ambientEnabled || !soundEnabled || !bootFinished || !ambientMaster) return;
+      const delay = 2600 + Math.random() * 3600;
+      ambientClickTimer = setTimeout(() => {
+        if (!audioCtx || !ambientEnabled || !soundEnabled || !bootFinished || !ambientMaster) return;
+        const now = audioCtx.currentTime;
+        const burstCount = Math.random() > 0.35 ? 9 + Math.floor(Math.random() * 3) : 5 + Math.floor(Math.random() * 3);
+
+        for (let i = 0; i < burstCount; i += 1) {
+          const start = now + i * (0.19 + Math.random() * 0.08);
+          const buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * 0.022), audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let j = 0; j < data.length; j += 1) {
+            const decay = Math.exp(-j / (data.length * 0.09));
+            data[j] = (Math.random() * 2 - 1) * decay;
+          }
+
+          const source = audioCtx.createBufferSource();
+          source.buffer = buffer;
+          const topFilter = audioCtx.createBiquadFilter();
+          topFilter.type = 'bandpass';
+          topFilter.frequency.value = 3800 + Math.random() * 1800;
+          topFilter.Q.value = 5.2;
+          const resonance = audioCtx.createBiquadFilter();
+          resonance.type = 'lowpass';
+          resonance.frequency.value = 1500;
+          const gain = audioCtx.createGain();
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(1.75 + Math.random() * 0.5, start + 0.0009);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.055);
+          source.connect(topFilter);
+          topFilter.connect(resonance);
+          resonance.connect(gain);
+          gain.connect(ambientMaster);
+          source.start(start);
+          source.stop(start + 0.06);
+        }
+
+        scheduleAmbientClicks();
+      }, delay);
+    }
+
+    function startAmbientRadio() {
+      if (!ambientEnabled || !soundEnabled || !bootFinished) return;
+      const ctx = ensureAudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => startAmbientRadio());
+        return;
+      }
+      if (ambientMaster) {
+        ambientMaster.gain.cancelScheduledValues(ctx.currentTime);
+        ambientMaster.gain.setValueAtTime(Math.max(ambientMaster.gain.value, 0.0001), ctx.currentTime);
+        ambientMaster.gain.linearRampToValueAtTime(0.33, ctx.currentTime + 0.2);
+        scheduleAmbientClicks();
+        scheduleAmbientSignals();
+        return;
+      }
+
+      ambientSignalIndex = 0;
+      ambientMaster = ctx.createGain();
+      ambientMaster.gain.value = 0.0001;
+      ambientMaster.connect(ctx.destination);
+
+      const noiseLow = ctx.createBiquadFilter();
+      const noiseMid = ctx.createBiquadFilter();
+      const noiseHigh = ctx.createBiquadFilter();
+      noiseLow.type = 'lowpass';
+      noiseLow.frequency.value = 760;
+      noiseMid.type = 'bandpass';
+      noiseMid.frequency.value = 250;
+      noiseMid.Q.value = 0.42;
+      noiseHigh.type = 'highpass';
+      noiseHigh.frequency.value = 55;
+      ambientNoiseGain = ctx.createGain();
+      ambientNoiseGain.gain.value = 0.13;
+      ambientNoiseSource = ctx.createBufferSource();
+      ambientNoiseSource.buffer = createNoiseBuffer(ctx, 3.2);
+      ambientNoiseSource.loop = true;
+      ambientNoiseSource.connect(noiseLow);
+      noiseLow.connect(noiseMid);
+      noiseMid.connect(noiseHigh);
+      noiseHigh.connect(ambientNoiseGain);
+      ambientNoiseGain.connect(ambientMaster);
+
+      ambientHumGain = ctx.createGain();
+      ambientHumGain.gain.value = 0.16;
+      ambientHumOscA = ctx.createOscillator();
+      ambientHumOscB = ctx.createOscillator();
+      const ambientHumOscC = ctx.createOscillator();
+      const ambientHumOscD = ctx.createOscillator();
+      const humFilter = ctx.createBiquadFilter();
+      humFilter.type = 'lowpass';
+      humFilter.frequency.value = 210;
+      ambientHumOscA.type = 'sine';
+      ambientHumOscB.type = 'triangle';
+      ambientHumOscC.type = 'sine';
+      ambientHumOscD.type = 'triangle';
+      ambientHumOscA.frequency.value = 46;
+      ambientHumOscB.frequency.value = 69;
+      ambientHumOscC.frequency.value = 92;
+      ambientHumOscD.frequency.value = 138;
+      ambientHumOscA.connect(ambientHumGain);
+      ambientHumOscB.connect(ambientHumGain);
+      ambientHumOscC.connect(ambientHumGain);
+      ambientHumOscD.connect(ambientHumGain);
+      ambientHumGain.connect(humFilter);
+      humFilter.connect(ambientMaster);
+
+      ambientLfo = ctx.createOscillator();
+      ambientLfoGain = ctx.createGain();
+      ambientLfo.type = 'sine';
+      ambientLfo.frequency.value = 0.065;
+      ambientLfoGain.gain.value = 0.03;
+      ambientLfo.connect(ambientLfoGain);
+      ambientLfoGain.connect(ambientMaster.gain);
+
+      const humDrift = ctx.createOscillator();
+      const humDriftGain = ctx.createGain();
+      humDrift.type = 'sine';
+      humDrift.frequency.value = 0.11;
+      humDriftGain.gain.value = 3.8;
+      humDrift.connect(humDriftGain);
+      humDriftGain.connect(ambientHumOscA.frequency);
+
+      const humDrift2 = ctx.createOscillator();
+      const humDriftGain2 = ctx.createGain();
+      humDrift2.type = 'sine';
+      humDrift2.frequency.value = 0.083;
+      humDriftGain2.gain.value = 2.6;
+      humDrift2.connect(humDriftGain2);
+      humDriftGain2.connect(ambientHumOscB.frequency);
+
+      ambientNoiseSource.start();
+      ambientHumOscA.start();
+      ambientHumOscB.start();
+      ambientHumOscC.start();
+      ambientHumOscD.start();
+      ambientLfo.start();
+      humDrift.start();
+      humDrift2.start();
+
+      ambientMaster._extraNodes = [ambientHumOscC, ambientHumOscD, humDrift, humDriftGain, humDrift2, humDriftGain2, humFilter];
+      ambientMaster.gain.linearRampToValueAtTime(0.33, ctx.currentTime + 0.55);
+      scheduleAmbientClicks();
+      scheduleAmbientSignals();
+    }
+
+    function stopAmbientRadio(immediate = false) {
+      stopAmbientClicks();
+      stopAmbientSignals();
+      if (!audioCtx || !ambientMaster) return;
+      const now = audioCtx.currentTime;
+      ambientMaster.gain.cancelScheduledValues(now);
+      ambientMaster.gain.setValueAtTime(ambientMaster.gain.value, now);
+      ambientMaster.gain.linearRampToValueAtTime(0.0001, now + (immediate ? 0.04 : 0.26));
+      const cleanupDelay = immediate ? 80 : 340;
+      setTimeout(() => {
+        try { if (ambientNoiseSource) ambientNoiseSource.stop(); } catch (e) {}
+        try { if (ambientHumOscA) ambientHumOscA.stop(); } catch (e) {}
+        try { if (ambientHumOscB) ambientHumOscB.stop(); } catch (e) {}
+        try { if (ambientLfo) ambientLfo.stop(); } catch (e) {}
+        if (ambientMaster && ambientMaster._extraNodes) {
+          ambientMaster._extraNodes.forEach(node => {
+            try { if (node.stop) node.stop(); } catch (e) {}
+            try { if (node.disconnect) node.disconnect(); } catch (e) {}
+          });
+        }
+        [ambientNoiseSource, ambientNoiseGain, ambientHumOscA, ambientHumOscB, ambientHumGain, ambientLfo, ambientLfoGain, ambientMaster].forEach(node => {
+          if (node && typeof node.disconnect === 'function') {
+            try { node.disconnect(); } catch (e) {}
+          }
+        });
+        ambientNoiseSource = null;
+        ambientNoiseGain = null;
+        ambientHumOscA = null;
+        ambientHumOscB = null;
+        ambientHumGain = null;
+        ambientLfo = null;
+        ambientLfoGain = null;
+        ambientMaster = null;
+      }, cleanupDelay);
+    }
+
+    function startBootHum() {
+      if (!soundEnabled) return;
+      const ctx = ensureAudioContext();
+      if (humOsc) return;
+      humGain = ctx.createGain();
+      humGain.gain.value = 0.012;
+      humGain.connect(ctx.destination);
+
+      humOsc = ctx.createOscillator();
+      humOsc.type = 'sawtooth';
+      humOsc.frequency.value = 58;
+      humOsc.connect(humGain);
+
+      humLfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      humLfo.type = 'sine';
+      humLfo.frequency.value = 1.6;
+      lfoGain.gain.value = 0.007;
+      humLfo.connect(lfoGain);
+      lfoGain.connect(humGain.gain);
+
+      humOsc.start();
+      humLfo.start();
+      humGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 0.12);
+    }
+
+    function stopBootHum() {
+      if (!audioCtx || !humOsc || !humGain) return;
+      const now = audioCtx.currentTime;
+      humGain.gain.cancelScheduledValues(now);
+      humGain.gain.setValueAtTime(humGain.gain.value, now);
+      humGain.gain.linearRampToValueAtTime(0.0001, now + 0.22);
+      setTimeout(() => {
+        try { humOsc.stop(); humLfo.stop(); } catch (e) {}
+        humOsc.disconnect();
+        humLfo.disconnect();
+        humGain.disconnect();
+        humOsc = null;
+        humLfo = null;
+        humGain = null;
+      }, 260);
+    }
+
+    function playBootBeep(kind = 'line') {
+      if (!soundEnabled) return;
+      const ctx = ensureAudioContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = kind === 'ready' ? 1800 : 1450;
+      osc.type = kind === 'ready' ? 'triangle' : 'square';
+      osc.frequency.setValueAtTime(kind === 'ready' ? 980 : 760, now);
+      if (kind === 'ready') osc.frequency.exponentialRampToValueAtTime(1320, now + 0.18);
+      else osc.frequency.exponentialRampToValueAtTime(920, now + 0.08);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(kind === 'ready' ? 0.06 : 0.038, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + (kind === 'ready' ? 0.26 : 0.12));
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + (kind === 'ready' ? 0.28 : 0.14));
+    }
+
+    function playBootMelody() {
+      if (!soundEnabled) return;
+      const ctx = ensureAudioContext();
+      const now = ctx.currentTime;
+      const notes = [392, 523.25, 659.25, 783.99];
+      notes.forEach((freq, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        const start = now + index * 0.11;
+        const end = start + 0.18;
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, start);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.03, end);
+        filter.type = 'lowpass';
+        filter.frequency.value = 1900;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.03, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, end);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(end + 0.02);
+      });
+    }
+
+    function triggerBootFlicker() {
+      bootOverlay.classList.remove('flicker');
+      void bootOverlay.offsetWidth;
+      bootOverlay.classList.add('flicker');
+    }
+
+    function buildBootLines() {
+      const selected = bootLinePools.map(pool => pool[Math.floor(Math.random() * pool.length)]);
+      bootLinesWrap.innerHTML = selected.map(line => `<div class="bootLine">${line}</div>`).join('');
+      bootLines = Array.from(document.querySelectorAll('#bootLines .bootLine'));
+    }
+
+    function finishBoot() {
+      if (bootFinished) return;
+      bootFinished = true;
+      stopBootHum();
+      playBootMelody();
+      playBootBeep('ready');
+      triggerBootFlicker();
+      bootProgressFill.style.width = '100%';
+      bootPercent.textContent = '100%';
+      bootStatus.textContent = 'Boot complete. Entering active analysis mode...';
+      if (soundEnabled && ambientEnabled) {
+        setTimeout(() => startAmbientRadio(), 220);
+      }
+      setTimeout(() => bootOverlay.classList.add('hidden'), 320);
+    }
+
+    function launchPipBoy() {
+      if (bootStarted) return;
+      bootStarted = true;
+      ensureAudioContext();
+      powerOverlay.classList.add('hidden');
+      bootOverlay.classList.remove('hidden');
+      setTimeout(() => startBootSequence(), 120);
+    }
+
+    function startBootSequence() {
+      if (bootFinished) return;
+      let progress = 0;
+      const progressSteps = [12, 28, 43, 61, 78, 92, 100];
+      const statusTexts = [
+        'Charging vacuum tubes and wrist-mount capacitors...',
+        'Scanning wasteland frequencies...',
+        'Decrypting faction field reports...',
+        'Aligning Vault-Tec doctrine metrics...',
+        'Projecting compass coordinates to display...',
+        'Purging static from CRT output...',
+        'Pip-Boy ready for field analysis.'
+      ];
+
+      buildBootLines();
+      startBootHum();
+      triggerBootFlicker();
+
+      bootLines.forEach((line, index) => {
+        setTimeout(() => {
+          line.classList.add('visible');
+          playBootBeep('line');
+          if (index === 1 || index === 3 || index === 5) triggerBootFlicker();
+          const next = progressSteps[Math.min(index, progressSteps.length - 1)];
+          progress = next;
+          bootProgressFill.style.width = `${progress}%`;
+          bootPercent.textContent = `${progress}%`;
+          bootStatus.textContent = statusTexts[Math.min(index, statusTexts.length - 1)];
+        }, 240 + index * 250);
+      });
+
+      setTimeout(() => {
+        bootProgressFill.style.width = '100%';
+        bootPercent.textContent = '100%';
+        bootStatus.textContent = 'Ready.';
+      }, 1900);
+
+      setTimeout(() => finishBoot(), 2280);
+
+      const skipBoot = (event) => {
+        if (!bootStarted) return;
+        if (event && event.target === powerButton) return;
+        finishBoot();
+      };
+      document.addEventListener('keydown', skipBoot, { once: true });
+      bootOverlay.addEventListener('click', skipBoot, { once: true });
+    }
+
+    function render(mode = 'full') {
+      const visible = factions.filter(visibleFaction);
+      renderHeatmap(visible);
+      renderConnections(visible);
+      renderPoints(visible);
+      if (mode === 'full') {
+        renderLegend(visible);
+        renderStatus(visible);
+        renderComparison();
+      }
+      if (state.selectedId) {
+        const current = visible.find(f => f.id === state.selectedId);
+        if (current) setDetails(current);
+        else {
+          state.selectedId = null;
+          if (!state.focusId) setDetails(null);
+        }
+      }
+    }
+
+    timelineStart.addEventListener('input', () => { syncTimelineLabels(); render('full'); });
+    timelineEnd.addEventListener('input', () => { syncTimelineLabels(); render('full'); });
+    searchInput.addEventListener('input', () => { state.search = searchInput.value; render('full'); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Shift') state.compareModifier = true;
+      if (e.key === 'Escape') {
+        state.selectedId = null;
+        state.focusId = null;
+        state.compareIds = [];
+        setDetails(null);
+        resetCompassView(true);
+        render('full');
+      }
+    });
+    document.addEventListener('keyup', e => {
+      if (e.key === 'Shift') state.compareModifier = false;
+    });
+    labelFull.addEventListener('click', () => { state.labelMode = 'full'; render('full'); });
+    labelCompact.addEventListener('click', () => { state.labelMode = 'compact'; render('full'); });
+    labelHover.addEventListener('click', () => { state.labelMode = 'hover'; render('full'); });
+
+    compareClear.addEventListener('click', () => {
+      state.compareIds = [];
+      render('full');
+    });
+
+    clearTimeline.addEventListener('click', () => {
+      clearTimelineFilter();
+      render('full');
+    });
+
+    clearGames.addEventListener('click', () => {
+      clearGameFilter();
+      render('full');
+    });
+
+    clearTypes.addEventListener('click', () => {
+      clearTypeFilter();
+      render('full');
+    });
+
+    clearLayers.addEventListener('click', () => {
+      clearLayerFilter();
+      state.search = '';
+      searchInput.value = '';
+      render('full');
+    });
+
+    presetMajor.addEventListener('click', () => { applyPreset('major'); render('full'); });
+    presetDemocracy.addEventListener('click', () => { applyPreset('democracy'); render('full'); });
+    presetExtremes.addEventListener('click', () => { applyPreset('extremes'); render('full'); });
+    presetRaiders.addEventListener('click', () => { applyPreset('raiders'); render('full'); });
+    presetEconomic.addEventListener('click', () => { applyPreset('economic'); render('full'); });
+    presetAuthExtremes.addEventListener('click', () => { applyPreset('auth-extremes'); render('full'); });
+    presetLibExtremes.addEventListener('click', () => { applyPreset('lib-extremes'); render('full'); });
+    presetDoomsday.addEventListener('click', () => { applyPreset('doomsday'); render('full'); });
+    presetAnarchy.addEventListener('click', () => { applyPreset('anarchy'); render('full'); });
+    presetReset.addEventListener('click', () => { state.activePreset = null; state.presetIds = null; syncPresetButtons(); render('full'); });
+    clearAllFiltersTop.addEventListener('click', () => { clearAllFilters(); render('full'); });
+
+    heatmapToggle.addEventListener('click', () => {
+      state.heatmap = !state.heatmap;
+      render('full');
+    });
+
+    let pendingViewFrame = null;
+    function applyViewTransform() {
+      const width = 1400 / state.viewScale;
+      const height = 1400 / state.viewScale;
+      const halfW = width / 2;
+      const halfH = height / 2;
+      if (state.viewScale <= 1) {
+        state.viewCenterX = 700;
+        state.viewCenterY = 700;
+      }
+      const minX = state.viewCenterX - halfW;
+      const minY = state.viewCenterY - halfH;
+      compassSvg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+    }
+
+    function scheduleViewTransform() {
+      if (pendingViewFrame) return;
+      pendingViewFrame = requestAnimationFrame(() => {
+        pendingViewFrame = null;
+        applyViewTransform();
+      });
+    }
+
+    function centerOnFaction(faction) {
+      const targetScale = Math.max(state.viewScale, 2.25);
+      const rawCenterX = coordX(faction.x);
+      const rawCenterY = coordY(faction.y);
+
+      const visibleWidth = 1400 / targetScale;
+      const visibleHeight = 1400 / targetScale;
+      const minCenterX = visibleWidth / 2;
+      const maxCenterX = 1400 - visibleWidth / 2;
+      const minCenterY = visibleHeight / 2;
+      const maxCenterY = 1400 - visibleHeight / 2;
+
+      const targetCenterX = Math.max(minCenterX, Math.min(maxCenterX, rawCenterX));
+      const targetCenterY = Math.max(minCenterY, Math.min(maxCenterY, rawCenterY));
+
+      animateFocusTo(targetScale, targetCenterX, targetCenterY);
+    }
+
+    let dragState = null;
+    compassShell.addEventListener('pointerdown', (event) => {
+      if (event.target.closest('.point')) return;
+      dragState = {
+        x: event.clientX,
+        y: event.clientY,
+        centerX: state.viewCenterX,
+        centerY: state.viewCenterY,
+        moved: false
+      };
+      compassShell.classList.add('dragging');
+    });
+    window.addEventListener('pointermove', (event) => {
+      if (!dragState) return;
+      if (state.viewScale <= 1) return;
+      const rect = compassShell.getBoundingClientRect();
+      const dx = event.clientX - dragState.x;
+      const dy = event.clientY - dragState.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragState.moved = true;
+      const visibleWidth = 1400 / state.viewScale;
+      const visibleHeight = 1400 / state.viewScale;
+      const minCenterX = visibleWidth / 2;
+      const maxCenterX = 1400 - visibleWidth / 2;
+      const minCenterY = visibleHeight / 2;
+      const maxCenterY = 1400 - visibleHeight / 2;
+      state.viewCenterX = Math.max(minCenterX, Math.min(maxCenterX, dragState.centerX - dx * (visibleWidth / rect.width)));
+      state.viewCenterY = Math.max(minCenterY, Math.min(maxCenterY, dragState.centerY - dy * (visibleHeight / rect.height)));
+      scheduleViewTransform();
+    });
+    window.addEventListener('pointerup', () => {
+      dragState = null;
+      compassShell.classList.remove('dragging');
+    });
+    compassShell.addEventListener('wheel', (event) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      if (viewAnimationFrame) {
+        cancelAnimationFrame(viewAnimationFrame);
+        viewAnimationFrame = null;
+      }
+
+      const rect = compassShell.getBoundingClientRect();
+      const prevScale = state.viewScale;
+      const clampedDelta = Math.max(-120, Math.min(120, event.deltaY));
+      const zoomFactor = Math.exp(-clampedDelta * 0.0018);
+      const nextScale = Math.max(1, Math.min(2.6, prevScale * zoomFactor));
+      if (Math.abs(nextScale - prevScale) < 0.0001) return;
+
+      const prevWidth = 1400 / prevScale;
+      const prevHeight = 1400 / prevScale;
+      const prevMinX = state.viewCenterX - prevWidth / 2;
+      const prevMinY = state.viewCenterY - prevHeight / 2;
+
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
+      const mouseSvgX = prevMinX + pointerX * (prevWidth / rect.width);
+      const mouseSvgY = prevMinY + pointerY * (prevHeight / rect.height);
+
+      const nextWidth = 1400 / nextScale;
+      const nextHeight = 1400 / nextScale;
+      const ratioX = pointerX / rect.width;
+      const ratioY = pointerY / rect.height;
+
+      let nextMinX = mouseSvgX - ratioX * nextWidth;
+      let nextMinY = mouseSvgY - ratioY * nextHeight;
+
+      nextMinX = Math.max(0, Math.min(1400 - nextWidth, nextMinX));
+      nextMinY = Math.max(0, Math.min(1400 - nextHeight, nextMinY));
+
+      state.viewScale = nextScale;
+      state.viewCenterX = nextMinX + nextWidth / 2;
+      state.viewCenterY = nextMinY + nextHeight / 2;
+      scheduleViewTransform();
+    }, { passive: false });
+
+    let viewAnimationFrame = null;
+    function animateViewTo(targetScale, targetCenterX, targetCenterY, duration = 280, options = {}) {
+      if (viewAnimationFrame) cancelAnimationFrame(viewAnimationFrame);
+      const startScale = state.viewScale;
+      const startCenterX = state.viewCenterX;
+      const startCenterY = state.viewCenterY;
+      const start = performance.now();
+      const easing = options.easing || 'sine';
+      const onComplete = options.onComplete || null;
+
+      function easeInOutSine(t) {
+        return -(Math.cos(Math.PI * t) - 1) / 2;
+      }
+
+      function easeOutQuint(t) {
+        return 1 - Math.pow(1 - t, 5);
+      }
+
+      function getEased(t) {
+        if (easing === 'outQuint') return easeOutQuint(t);
+        return easeInOutSine(t);
+      }
+
+      function frame(now) {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = getEased(t);
+        state.viewScale = startScale + (targetScale - startScale) * eased;
+        state.viewCenterX = startCenterX + (targetCenterX - startCenterX) * eased;
+        state.viewCenterY = startCenterY + (targetCenterY - startCenterY) * eased;
+        scheduleViewTransform();
+        if (t < 1) {
+          viewAnimationFrame = requestAnimationFrame(frame);
+        } else {
+          viewAnimationFrame = null;
+          state.viewScale = targetScale;
+          state.viewCenterX = targetCenterX;
+          state.viewCenterY = targetCenterY;
+          scheduleViewTransform();
+          if (onComplete) onComplete();
+        }
+      }
+
+      viewAnimationFrame = requestAnimationFrame(frame);
+    }
+
+    function animateFocusTo(targetScale, targetCenterX, targetCenterY) {
+      const overshootScale = Math.min(2.6, targetScale * 1.035);
+      const overshootCenterX = targetCenterX + (targetCenterX - state.viewCenterX) * 0.035;
+      const overshootCenterY = targetCenterY + (targetCenterY - state.viewCenterY) * 0.035;
+
+      animateViewTo(overshootScale, overshootCenterX, overshootCenterY, 520, {
+        easing: 'outQuint',
+        onComplete: () => {
+          animateViewTo(targetScale, targetCenterX, targetCenterY, 260, { easing: 'sine' });
+        }
+      });
+    }
+
+    function resetCompassView(animated = true) {
+      state.viewScale = Math.max(1, state.viewScale);
+      if (animated) animateViewTo(1, 700, 700, 820);
+      else {
+        state.viewScale = 1;
+        state.viewCenterX = 700;
+        state.viewCenterY = 700;
+        state.panX = 0;
+        state.panY = 0;
+        scheduleViewTransform();
+      }
+    }
+
+    document.getElementById('resetView').addEventListener('click', () => {
+      resetCompassView(true);
+    });
+
+    compassShell.addEventListener('click', (event) => {
+      const clickedPoint = event.target.closest('.point');
+      if (clickedPoint) return;
+      if (dragState && dragState.moved) return;
+      // klik w tło kompasu nie wyłącza już focusa
+    });
+
+    powerButton.addEventListener('click', launchPipBoy);
+
+    buildButtons();
+    syncTimelineLabels();
+    syncPresetButtons();
+    renderDNA(null);
+    scheduleViewTransform();
+    render('full');
+  </script>
+
+<div style="margin-top:28px; text-align:center; font-size:13px; color:var(--dim); line-height:1.6; padding:20px 0; border-top:1px solid var(--border);">
+  A personal, fan-made project related to the Fallout series, created using ChatGPT Plus out of love for the franchise ❤️<br />
+  Have fun, Wastelander 😁☢️<br /><br />
+  <span style="opacity:0.85;">
+    P.S. For the best possible experience, it is recommended to enjoy your time with the project alongside a bottle of ice-cold Nuka-Cola 🧊
+  </span>
+</div>
+
+<div class="socialSection" style="margin-top:14px; display:flex; justify-content:space-between; align-items:flex-end; gap:18px; flex-wrap:wrap; font-size:13px; color:var(--dim); padding-bottom:18px;">
+  <div style="text-align:center; flex:1 1 auto; min-width:320px;">
+    <div style="margin-bottom:8px; opacity:0.8; letter-spacing:1px;">WASTELAND NETWORK</div>
+    <div style="display:flex; justify-content:center; gap:18px; flex-wrap:wrap; align-items:center; line-height:1.7;">
+      <span>arkadek00 -> GitHub</span>
+      <span>arkadek00 -> Reddit</span>
+      <span>arkadek00 -> YouTube</span>
+    </div>
+  </div>
+  <div style="flex:0 0 auto; align-self:flex-end; text-align:right; color:#ffffff; opacity:0.85; font-size:14px; font-weight:600; white-space:nowrap;">
+    Project Version 1.0 — Initial Release
+  </div>
+</div>
+
+</body>
+</html>
